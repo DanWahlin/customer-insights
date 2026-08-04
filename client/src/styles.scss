@@ -84,3 +84,8 @@ th {
         color: #fff;
     }
 }
+
+.account-menu.mat-mdc-menu-panel {
+    width: 380px;
+    max-width: calc(100vw - 24px);
+}

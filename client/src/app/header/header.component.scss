@@ -53,7 +53,8 @@
 .account-summary {
   display: flex;
   align-items: center;
-  min-width: 280px;
+  box-sizing: border-box;
+  width: 100%;
   padding: 16px;
   color: #222;
 }
