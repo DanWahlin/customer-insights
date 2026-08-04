@@ -169,6 +169,8 @@ The Free SKU is intended for a small proof of concept. It has limited storage, i
 
 Create a single-page application registration in Microsoft Entra ID with `http://localhost:4200` as an SPA redirect URI. Put its application client ID in `ENTRAID_CLIENT_ID`. For a single-tenant registration, also set `ENTRAID_TENANT_ID` to the tenant ID. Leave it empty only for a multitenant registration that should use the `organizations` authority.
 
+Browsers treat `http://localhost` as a secure-context exception, so local MSAL development does not require HTTPS. Any non-localhost address, including a LAN IP or Tailscale hostname, must use HTTPS for Web Crypto and must be added as an exact SPA redirect URI in the app registration. For the private test host used by this repository, that redirect is `https://ubuntu-32gb-danwahlin.tailc0c02a.ts.net:9443`.
+
 Add these delegated Microsoft Graph permissions and grant tenant admin consent where required:
 
 - `User.Read`
