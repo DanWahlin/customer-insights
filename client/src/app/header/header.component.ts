@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, inject, OnDestroy, On
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { EventBusService, Events } from '@core/eventbus.service';
 import { FeatureFlagsService } from '@core/feature-flags.service';
@@ -16,7 +17,7 @@ import { PhoneCallComponent } from '../phone-call/phone-call.component';
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  imports: [MatToolbarModule, MatIconModule, MatButtonModule, PhoneCallComponent],
+  imports: [MatToolbarModule, MatIconModule, MatButtonModule, MatMenuModule, PhoneCallComponent],
   changeDetection: ChangeDetectionStrategy.Eager
 })
 export class HeaderComponent implements OnInit, OnDestroy {
@@ -49,6 +50,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   async logout() {
     await this.graphService.logout();
+  }
+
+  accountName(): string {
+    return this.graphService.currentUser()?.displayName?.trim() || 'Microsoft 365 user';
+  }
+
+  accountEmail(): string {
+    const user = this.graphService.currentUser();
+    return user?.mail?.trim() || user?.userPrincipalName?.trim() || '';
+  }
+
+  accountInitials(): string {
+    const words = this.accountName().split(/\s+/).filter(Boolean);
+    return words.slice(0, 2).map(word => word[0]?.toUpperCase()).join('') || 'M';
   }
 
   hangup() {

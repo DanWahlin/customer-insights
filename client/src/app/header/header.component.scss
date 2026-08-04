@@ -16,3 +16,73 @@
 .spacer {
   flex: 1 1 auto;
 }
+
+.account-button {
+  min-height: 48px;
+}
+
+.account-button-name {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  border: 2px solid rgb(255 255 255 / 75%);
+  border-radius: 50%;
+  background: #565656;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.account-summary {
+  display: flex;
+  align-items: center;
+  min-width: 280px;
+  padding: 16px;
+  color: #222;
+}
+
+.account-avatar-large {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-color: #d0d0d0;
+  background: #3f51b5;
+  font-size: 16px;
+}
+
+.account-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.account-details strong,
+.account-details span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-details span {
+  margin-top: 2px;
+  color: #666;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .account-button-name {
+    display: none;
+  }
+}

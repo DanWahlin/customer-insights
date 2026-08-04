@@ -33,8 +33,10 @@ export class GraphService {
   private graphClient?: Client;
   private initialization?: Promise<User | null>;
   private readonly signedIn = signal(false);
+  private readonly currentUserState = signal<User | null>(null);
 
   readonly isSignedIn = this.signedIn.asReadonly();
+  readonly currentUser = this.currentUserState.asReadonly();
 
   constructor(private featureFlags: FeatureFlagsService) { }
 
@@ -65,11 +67,13 @@ export class GraphService {
     this.initGraphClient();
     try {
       const user = await this.getMe();
+      this.currentUserState.set(user);
       this.signedIn.set(true);
       return user;
     } catch (error) {
       console.warn('A cached Microsoft account requires an interactive sign-in.', error);
       this.graphClient = undefined;
+      this.currentUserState.set(null);
       this.signedIn.set(false);
       return null;
     }
@@ -87,10 +91,12 @@ export class GraphService {
     this.initGraphClient();
     try {
       const user = await this.getMe();
+      this.currentUserState.set(user);
       this.signedIn.set(true);
       return user;
     } catch (error) {
       this.graphClient = undefined;
+      this.currentUserState.set(null);
       this.signedIn.set(false);
       throw error;
     }
@@ -101,6 +107,7 @@ export class GraphService {
     const account = msal.getActiveAccount();
     await msal.logoutPopup({ account, postLogoutRedirectUri: window.location.origin });
     this.graphClient = undefined;
+    this.currentUserState.set(null);
     this.signedIn.set(false);
   }
 

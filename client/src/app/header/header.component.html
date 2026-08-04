@@ -9,7 +9,27 @@
   }
   @if (this.featureFlags.microsoft365Enabled) {
     @if (this.graphService.isSignedIn()) {
-      <button mat-button type="button" (click)="logout()">Sign out</button>
+      <button mat-button type="button" class="account-button" [matMenuTriggerFor]="accountMenu"
+              aria-label="Open Microsoft 365 account menu">
+        <span class="account-avatar" aria-hidden="true">{{ accountInitials() }}</span>
+        <span class="account-button-name">{{ accountName() }}</span>
+        <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #accountMenu="matMenu" xPosition="before" class="account-menu">
+        <div class="account-summary" role="presentation" (click)="$event.stopPropagation()">
+          <span class="account-avatar account-avatar-large" aria-hidden="true">{{ accountInitials() }}</span>
+          <div class="account-details">
+            <strong>{{ accountName() }}</strong>
+            @if (accountEmail()) {
+              <span>{{ accountEmail() }}</span>
+            }
+          </div>
+        </div>
+        <button mat-menu-item type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Sign out</span>
+        </button>
+      </mat-menu>
     } @else {
       <button mat-button type="button" (click)="login()">Sign in</button>
     }
