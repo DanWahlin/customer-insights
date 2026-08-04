@@ -16,9 +16,17 @@ import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
 import { PhonePipe } from '@shared/phone.pipe';
 import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { OverlayRequestResponseInterceptor } from '@core/overlay/overlay-request-response.interceptor';
+import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge';
 
+function isAuthenticationResponse(): boolean {
+  const response = `${window.location.search}&${window.location.hash}`;
+  return /(?:^|[?&#])(code|error|error_description|state)=/i.test(response);
+}
 
-bootstrapApplication(AppComponent, {
+if (isAuthenticationResponse()) {
+  broadcastResponseToMainFrame().catch(error => console.error('Microsoft authentication callback failed:', error));
+} else {
+  bootstrapApplication(AppComponent, {
     providers: [
         provideZoneChangeDetection(),
         importProvidersFrom(BrowserModule, FormsModule, MatBadgeModule, MatButtonModule, MatCardModule,
@@ -32,5 +40,6 @@ bootstrapApplication(AppComponent, {
           multi: true,
         }
     ]
-  })
-  .catch(err => console.error(err));
+    })
+    .catch(err => console.error(err));
+}
