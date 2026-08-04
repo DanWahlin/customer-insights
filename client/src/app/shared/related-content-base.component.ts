@@ -9,6 +9,7 @@ import { GraphService } from "@core/graph.service";
 })
 export abstract class RelatedContentBaseComponent {
     graphService: GraphService = inject(GraphService);
+    private searchGeneration = 0;
     
     @Output()
     dataLoaded: EventEmitter<any> = new EventEmitter();
@@ -36,4 +37,10 @@ export abstract class RelatedContentBaseComponent {
     }
 
     abstract search(searchText: string) : Promise<any>;
+
+    protected async updateWithLatest<T>(loader: () => Promise<T[]>): Promise<void> {
+      const generation = ++this.searchGeneration;
+      const results = await loader();
+      if (generation === this.searchGeneration) this.data = results;
+    }
 }

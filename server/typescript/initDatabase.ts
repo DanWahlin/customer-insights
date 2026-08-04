@@ -1,20 +1,20 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { databaseConfig } from './databaseConfig';
 
 const pool = new Pool(databaseConfig);
 
-async function checkTables() {
+async function checkTables(db: PoolClient) {
   const query = `SELECT table_name
     FROM information_schema.tables
     WHERE table_schema = 'public';`;
 
-  const res = await pool.query(query);
+  const res = await db.query(query);
   const tableNames = res.rows.map(row => row.table_name);
   return tableNames.includes('customers') && tableNames.includes('orders') && tableNames.includes('order_items');
 }
 
-async function createTables() {
-  const createCustomersTable = `CREATE TABLE customers (
+async function createTables(db: PoolClient) {
+  const createCustomersTable = `CREATE TABLE IF NOT EXISTS customers (
     id SERIAL PRIMARY KEY,
     company VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
@@ -24,7 +24,7 @@ async function createTables() {
     phone VARCHAR(255) NOT NULL
   );`;
 
-  const createOrdersTable = `CREATE TABLE orders (
+  const createOrdersTable = `CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER NOT NULL,
     date DATE NOT NULL,
@@ -32,7 +32,7 @@ async function createTables() {
     FOREIGN KEY (customer_id) REFERENCES customers(id)
   );`;
 
-  const createOrderItemsTable = `CREATE TABLE order_items (
+  const createOrderItemsTable = `CREATE TABLE IF NOT EXISTS order_items (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
@@ -41,7 +41,7 @@ async function createTables() {
     FOREIGN KEY (order_id) REFERENCES orders(id)
   );`;
 
-  const createReviewsTable = `CREATE TABLE reviews (
+  const createReviewsTable = `CREATE TABLE IF NOT EXISTS reviews (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER NOT NULL,
     review INTEGER NOT NULL,
@@ -50,13 +50,13 @@ async function createTables() {
     FOREIGN KEY (customer_id) REFERENCES customers(id)
   );`;
 
-  await pool.query(createCustomersTable);
-  await pool.query(createOrdersTable);
-  await pool.query(createOrderItemsTable);
-  await pool.query(createReviewsTable);
+  await db.query(createCustomersTable);
+  await db.query(createOrdersTable);
+  await db.query(createOrderItemsTable);
+  await db.query(createReviewsTable);
 }
 
-async function seedData() {
+async function seedData(db: PoolClient) {
   const insertCustomers = `INSERT INTO customers (company, first_name, last_name, city, email, phone)
     VALUES
       ('Adatum Corporation', 'Jane', 'Doe', 'New York', 'jane.doe@example.com', '+15551234567'),
@@ -102,27 +102,49 @@ async function seedData() {
   SELECT id, company, first_name, last_name, city, email, phone FROM customers
   $$;`
 
-  await pool.query(insertCustomers);
-  await pool.query(insertOrders);
-  await pool.query(insertOrderItems);
-  await pool.query(insertReviews);
-  await pool.query(customersSelectSproc);
+  await db.query(insertCustomers);
+  await db.query(insertOrders);
+  await db.query(insertOrderItems);
+  await db.query(insertReviews);
+  await db.query(customersSelectSproc);
 }
 
 export async function initializeDb() {
-  await pool.query('SELECT 1');
-  console.log('Connected to database...');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('openai-acs-msgraph-init'))");
+    console.log('Connected to database...');
 
-  const tablesExist = await checkTables();
+    const tablesExisted = await checkTables(client);
+    await createTables(client);
+    const customerCount = Number((await client.query('SELECT COUNT(*) AS count FROM customers')).rows[0].count);
+    if (customerCount === 0) await seedData(client);
+    else {
+      await client.query(`CREATE OR REPLACE FUNCTION get_customers()
+        RETURNS SETOF customers
+        LANGUAGE SQL
+        AS $$ SELECT id, company, first_name, last_name, city, email, phone FROM customers $$;`);
+    }
 
-  if (!tablesExist) {
-    await createTables();
-    await seedData();
-    console.log('Database initialized');
-  } else {
-    console.log('Database already initialized');
+    await client.query(`DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_readonly') THEN
+          CREATE ROLE app_readonly NOLOGIN;
+        END IF;
+      END
+    $$;`);
+    await client.query('GRANT USAGE ON SCHEMA public TO app_readonly');
+    await client.query('GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_readonly');
+    await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO app_readonly');
+    await client.query('GRANT EXECUTE ON FUNCTION get_customers() TO app_readonly');
+    await client.query('COMMIT');
+    console.log(tablesExisted && customerCount > 0 ? 'Database already initialized' : 'Database initialized');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
   }
-
-  pool.end();
-  return;
 }

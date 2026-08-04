@@ -31,6 +31,7 @@ const GRAPH_SCOPES = [
 export class GraphService {
   private msal?: PublicClientApplication;
   private graphClient?: Client;
+  private initialization?: Promise<User | null>;
   private readonly signedIn = signal(false);
 
   readonly isSignedIn = this.signedIn.asReadonly();
@@ -39,11 +40,14 @@ export class GraphService {
 
   async init(): Promise<User | null> {
     if (!this.featureFlags.microsoft365Enabled) return null;
+    return this.initialization ??= this.initialize();
+  }
 
+  private async initialize(): Promise<User | null> {
     this.msal = new PublicClientApplication({
       auth: {
         clientId: environment.ENTRAID_CLIENT_ID,
-        authority: 'https://login.microsoftonline.com/organizations',
+        authority: `https://login.microsoftonline.com/${environment.ENTRAID_TENANT_ID || 'organizations'}`,
         redirectUri: window.location.origin,
         postLogoutRedirectUri: window.location.origin
       },
@@ -76,6 +80,7 @@ export class GraphService {
   }
 
   async login(): Promise<User> {
+    await this.init();
     const msal = this.requireMsal();
     const result = await msal.loginPopup({ scopes: GRAPH_SCOPES });
     msal.setActiveAccount(result.account);
@@ -139,7 +144,7 @@ export class GraphService {
       channelId: hit.resource.channelIdentity?.channelId,
       chatId: hit.resource.chatId,
       messageId: hit.resource.id,
-      summary: hit.summary ?? ''
+      summary: this.stripGraphHighlighting(hit.summary ?? '')
     }));
 
     const results = await Promise.allSettled(messageInfo.map(info => {
@@ -262,6 +267,10 @@ export class GraphService {
     return (response?.value ?? []).flatMap((item: any) =>
       (item.hitsContainers ?? []).flatMap((container: any) => container.hits ?? [])
     );
+  }
+
+  private stripGraphHighlighting(summary: string): string {
+    return summary.replace(/<\/?c\d+>/gi, '');
   }
 
   private encodePathSegment(value: string): string {

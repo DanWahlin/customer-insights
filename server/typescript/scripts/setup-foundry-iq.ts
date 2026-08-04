@@ -38,11 +38,13 @@ const openai = new OpenAI({
 
 async function main() {
   const documentsDirectory = path.resolve(__dirname, '../../../customer documents');
-  const documents = await extractDocuments(documentsDirectory);
+  const skippedEmpty: string[] = [];
+  const documents = await extractDocuments(documentsDirectory, fileName => skippedEmpty.push(fileName));
   const chunks = chunkDocuments(documents);
   if (!chunks.length) throw new Error('No document chunks were produced.');
 
   console.log(`Extracted ${documents.length} documents into ${chunks.length} chunks.`);
+  if (skippedEmpty.length) console.log(`Skipped empty documents: ${skippedEmpty.join(', ')}`);
 
   const embeddings = await openai.embeddings.create({
     model: AI_EMBEDDING_MODEL,
@@ -92,17 +94,28 @@ async function main() {
   });
   console.log(`Created or updated index ${AZURE_AI_SEARCH_INDEX}.`);
 
-  await searchRequest(`/indexes/${AZURE_AI_SEARCH_INDEX}/docs/index`, {
+  const existing = await searchRequest(`/indexes/${AZURE_AI_SEARCH_INDEX}/docs/search`, {
     method: 'POST',
-    body: {
-      value: chunks.map((chunk, index) => ({
-        '@search.action': 'mergeOrUpload',
-        ...chunk,
-        contentVector: embeddings.data[index].embedding
-      }))
-    }
+    body: { search: '*', select: 'id', top: 1000 }
   });
-  console.log(`Uploaded ${chunks.length} chunks.`);
+  const currentIds = new Set(chunks.map(chunk => chunk.id));
+  const staleDeletes = (existing.value ?? [])
+    .filter((document: { id: string }) => !currentIds.has(document.id))
+    .map((document: { id: string }) => ({ '@search.action': 'delete', id: document.id }));
+  const uploadActions = chunks.map((chunk, index) => ({
+    '@search.action': 'mergeOrUpload',
+    ...chunk,
+    contentVector: embeddings.data[index].embedding
+  }));
+  const indexingResult = await searchRequest(`/indexes/${AZURE_AI_SEARCH_INDEX}/docs/index`, {
+    method: 'POST',
+    body: { value: [...staleDeletes, ...uploadActions] }
+  });
+  const failedActions = (indexingResult.value ?? []).filter((result: { status: boolean }) => !result.status);
+  if (failedActions.length) {
+    throw new Error(`Azure AI Search rejected ${failedActions.length} indexing action(s).`);
+  }
+  console.log(`Uploaded ${chunks.length} chunks and removed ${staleDeletes.length} stale chunk(s).`);
 
   await searchRequest(`/knowledgesources('${AZURE_AI_SEARCH_KNOWLEDGE_SOURCE}')`, {
     method: 'PUT',

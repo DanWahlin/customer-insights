@@ -6,6 +6,9 @@
             <mat-icon>close</mat-icon>
         </button>
         <span class="message-label">Message:</span> <textarea type="text" [(ngModel)]="message" title="Message"></textarea>
+        @if (error) {
+            <p role="alert">{{ error }}</p>
+        }
     </mat-dialog-content>
 
     <div mat-dialog-actions align="end">

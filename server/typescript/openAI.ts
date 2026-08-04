@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import OpenAI from 'openai';
 import { QueryData, EmailSmsResponse } from './interfaces';
 import './config';
@@ -8,24 +9,32 @@ const {
     AI_ENDPOINT,
     AI_MODEL
 } = process.env as Record<string, string>;
+let aiClient: OpenAI | undefined;
 
-async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
-    checkRequiredEnvVars(['AI_API_KEY', 'AI_MODEL']);
+async function callAI(systemPrompt: string, userPrompt: string, jsonOutput = false): Promise<string> {
+    checkRequiredEnvVars(['AI_API_KEY', 'AI_ENDPOINT', 'AI_MODEL']);
 
-    const client = new OpenAI({
+    const client = aiClient ??= new OpenAI({
         apiKey: AI_API_KEY,
-        ...(AI_ENDPOINT ? { baseURL: `${AI_ENDPOINT.replace(/\/$/, '')}/openai/v1/` } : {})
+        baseURL: `${AI_ENDPOINT.replace(/\/$/, '')}/openai/v1/`,
+        timeout: 30_000,
+        maxRetries: 2
     });
     const response = await client.responses.create({
         model: AI_MODEL,
         instructions: systemPrompt,
-        input: userPrompt
+        input: jsonOutput ? `Return the result as JSON.\n\n${userPrompt}` : userPrompt,
+        reasoning: { effort: 'low' },
+        max_output_tokens: 2000,
+        ...(jsonOutput ? { text: { format: { type: 'json_object' as const } } } : {})
     });
+    if (response.status !== 'completed') throw new Error('The model response was incomplete.');
     return response.output_text.trim();
 }
 
 async function getSQLFromNLP(userPrompt: string): Promise<QueryData> {
-    const dbSchema = await fs.promises.readFile('db.schema', 'utf8');
+    const dbSchemaPath = path.resolve(__dirname, path.basename(__dirname) === 'dist' ? '../db.schema' : 'db.schema');
+    const dbSchema = await fs.promises.readFile(dbSchemaPath, 'utf8');
     const systemPrompt = `
       You convert natural language into safe PostgreSQL SELECT queries and return only a JSON object.
 
@@ -51,10 +60,14 @@ async function getSQLFromNLP(userPrompt: string): Promise<QueryData> {
     let queryData: QueryData = { sql: '', paramValues: [], error: '' };
     let results = '';
     try {
-        results = await callAI(systemPrompt, userPrompt);
+        results = await callAI(systemPrompt, userPrompt, true);
         const json = extractJson(results);
         if (!json) throw new Error('The model did not return a JSON query object.');
-        queryData = { ...queryData, ...JSON.parse(json) };
+        const parsed = JSON.parse(json);
+        if (typeof parsed.sql !== 'string' || !Array.isArray(parsed.paramValues) || parsed.paramValues.length > 50) {
+            throw new Error('The model returned an invalid query object.');
+        }
+        queryData = { ...queryData, sql: parsed.sql, paramValues: parsed.paramValues };
         if (isProhibitedQuery(queryData.sql)) {
             queryData.sql = '';
             queryData.error = 'Prohibited query.';
@@ -105,10 +118,20 @@ async function completeEmailSMSMessages(prompt: string, company: string, contact
         error: ''
     };
     try {
-        const results = await callAI(systemPrompt, userPrompt);
+        const results = await callAI(systemPrompt, userPrompt, true);
         const json = extractJson(results);
         if (!json) throw new Error('The model did not return a JSON message object.');
-        content = { ...content, ...JSON.parse(json), status: true };
+        const parsed = JSON.parse(json);
+        if (![parsed.emailSubject, parsed.emailBody, parsed.sms].every(value => typeof value === 'string')) {
+            throw new Error('The model returned an invalid message object.');
+        }
+        content = {
+            ...content,
+            emailSubject: parsed.emailSubject,
+            emailBody: parsed.emailBody,
+            sms: parsed.sms.slice(0, 160),
+            status: true
+        };
     } catch (error) {
         console.error('Error generating email and SMS messages:', error);
         content.status = false;

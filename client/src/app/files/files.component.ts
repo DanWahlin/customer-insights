@@ -14,6 +14,6 @@ import { RelatedContentBaseComponent } from '@shared/related-content-base.compon
 })
 export class FilesComponent extends RelatedContentBaseComponent {
   override async search(query: string) {
-    this.data = await this.graphService.searchFiles(query);
+    await this.updateWithLatest(() => this.graphService.searchFiles(query));
   }
 }

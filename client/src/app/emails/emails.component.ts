@@ -12,6 +12,6 @@ import { RelatedContentBaseComponent } from '@shared/related-content-base.compon
 })
 export class EmailsComponent extends RelatedContentBaseComponent {
   override async search(query: string) {
-    this.data = await this.graphService.searchEmailMessages(query);
+    await this.updateWithLatest(() => this.graphService.searchEmailMessages(query));
   }
 }

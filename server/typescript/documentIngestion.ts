@@ -19,6 +19,13 @@ export interface DocumentChunk {
   content: string;
 }
 
+export class EmptyDocumentError extends Error {
+  constructor(readonly filePath: string) {
+    super(`No text could be extracted from ${filePath}`);
+    this.name = 'EmptyDocumentError';
+  }
+}
+
 const knownCustomers = [
   'Adatum Corporation',
   'Adventure Works Cycles',
@@ -34,32 +41,44 @@ export async function extractDocument(filePath: string): Promise<ExtractedDocume
     content = (await mammoth.extractRawText({ path: filePath })).value;
   } else if (extension === '.xlsx') {
     content = await extractXlsxText(filePath);
-  } else if (extension === '.svg') {
-    content = decodeXml((await fs.readFile(filePath, 'utf8')).replace(/<[^>]+>/g, ' '));
   } else {
     throw new Error(`Unsupported document type: ${extension}`);
   }
 
   content = normalizeWhitespace(content);
-  if (!content) throw new Error(`No text could be extracted from ${filePath}`);
+  if (!content) throw new EmptyDocumentError(filePath);
 
   const title = path.basename(filePath, extension).replaceAll('-', ' ');
   return {
     title,
-    sourcePath: `customer-documents/${path.basename(filePath)}`,
+    sourcePath: `customer documents/${path.basename(filePath)}`,
     customerName: inferCustomerName(`${title}\n${content}`),
     content
   };
 }
 
-export async function extractDocuments(directory: string): Promise<ExtractedDocument[]> {
+export async function extractDocuments(
+  directory: string,
+  onSkippedEmpty?: (fileName: string) => void
+): Promise<ExtractedDocument[]> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   const supported = entries
     .filter(entry => entry.isFile() && ['.docx', '.xlsx'].includes(path.extname(entry.name).toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const results = await Promise.allSettled(supported.map(entry => extractDocument(path.join(directory, entry.name))));
-  return results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+  const documents: ExtractedDocument[] = [];
+  for (const entry of supported) {
+    try {
+      documents.push(await extractDocument(path.join(directory, entry.name)));
+    } catch (error) {
+      if (error instanceof EmptyDocumentError) {
+        onSkippedEmpty?.(entry.name);
+        continue;
+      }
+      throw error;
+    }
+  }
+  return documents;
 }
 
 export function chunkDocument(document: ExtractedDocument, maxWords = 450, overlapWords = 60): DocumentChunk[] {

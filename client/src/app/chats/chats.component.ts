@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { RelatedContentBaseComponent } from '@shared/related-content-base.component';
 import { TeamsDialogData } from '../textarea-dialog/dialog-data';
 import { TextAreaDialogComponent } from '../textarea-dialog/textarea-dialog.component';
+import { FeatureFlagsService } from '@core/feature-flags.service';
 
 @Component({
   selector: 'app-chats',
@@ -17,6 +18,7 @@ import { TextAreaDialogComponent } from '../textarea-dialog/textarea-dialog.comp
 export class ChatsComponent extends RelatedContentBaseComponent implements OnDestroy {
   subscription = new Subscription();
   dialog = inject(MatDialog);
+  featureFlags = inject(FeatureFlagsService);
   dialogData: TeamsDialogData = {
     id: '',
     teamId: '',
@@ -39,7 +41,7 @@ export class ChatsComponent extends RelatedContentBaseComponent implements OnDes
   }
 
   override async search(query: string) {
-    this.data = await this.graphService.searchChatMessages(query);
+    await this.updateWithLatest(() => this.graphService.searchChatMessages(query));
   }
 
   ngOnDestroy() {

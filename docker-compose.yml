@@ -1,19 +1,17 @@
 services:
   postgresDb:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-web}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-web-password}
       POSTGRES_DB: ${POSTGRES_DATABASE:-CustomersDB}
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - postgres-data-v18:/var/lib/postgresql
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
-# Alternatively, you can use the following command to run the container:
-# Mac/Linux: 
-# docker run --name postgresDb -e POSTGRES_USER=web -e POSTGRES_PASSWORD=web-password -e POSTGRES_DB=CustomersDB -v "$(pwd)/data:/var/lib/postgresql/data" -p 127.0.0.1:5432:5432 postgres
+# Alternatively, run the container directly:
+# docker run --name postgresDb -e POSTGRES_USER=web -e POSTGRES_PASSWORD=web-password -e POSTGRES_DB=CustomersDB -v postgres-data-v18:/var/lib/postgresql -p 127.0.0.1:5432:5432 postgres:18-alpine
 
-# Windows with PowerShell: 
-# docker run --name postgresDb -e POSTGRES_USER=web -e POSTGRES_PASSWORD=web-password -e POSTGRES_DB=CustomersDB -v ${PWD}/data:/var/lib/postgresql/data -p 127.0.0.1:5432:5432 postgres
-
+volumes:
+  postgres-data-v18:

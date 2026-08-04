@@ -5,14 +5,8 @@ import { databaseConfig } from './databaseConfig';
 const pool = new Pool(databaseConfig);
 
 async function getCustomers() {
-    try {
-        console.log('Getting customers from database.');
-        return await pool.query('SELECT * FROM get_customers()');
-    }
-    catch (e) {
-        console.error('Error getting customers:', e);
-        return null;
-    }
+    console.log('Getting customers from database.');
+    return pool.query('SELECT * FROM get_customers()');
 }
 
 async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: string }> {
@@ -28,6 +22,7 @@ async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: st
     const client = await pool.connect();
     try {
         await client.query('BEGIN TRANSACTION READ ONLY');
+        await client.query('SET LOCAL ROLE app_readonly');
         await client.query('SET LOCAL statement_timeout = 5000');
         const result = await client.query(withoutTrailingSemicolon, sqlCommandObject.paramValues);
         await client.query('COMMIT');

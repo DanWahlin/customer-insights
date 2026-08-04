@@ -14,6 +14,12 @@
     "lint": "ng lint"
   },
   "private": true,
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "overrides": {
+    "@hono/node-server": "^2.0.5"
+  },
   "dependencies": {
     "@angular/animations": "^22.1.0",
     "@angular/cdk": "^22.1.0",

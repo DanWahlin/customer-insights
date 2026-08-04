@@ -40,18 +40,19 @@ Copy `.env.example` to `.env` at the repository root. `.env` is ignored by Git.
 
 ```dotenv
 ENTRAID_CLIENT_ID=
+ENTRAID_TENANT_ID=
 TEAM_ID=
 CHANNEL_ID=
 AI_API_KEY=
 AI_ENDPOINT=
 AI_MODEL=gpt-5-mini
 AI_EMBEDDING_MODEL=text-embedding-3-small
-AZURE_FOUNDRY_PROJECT_ENDPOINT=
 AZURE_AI_SEARCH_ENDPOINT=
 AZURE_AI_SEARCH_KEY=
 AZURE_AI_SEARCH_INDEX=customer-documents-index
 AZURE_AI_SEARCH_KNOWLEDGE_SOURCE=customer-documents-ks
 AZURE_AI_SEARCH_KNOWLEDGE_BASE=customer-documents-kb
+DOCUMENT_REPOSITORY_URL=https://github.com/DanWahlin/openai-acs-msgraph/blob/main/
 POSTGRES_USER=web
 POSTGRES_PASSWORD=web-password
 POSTGRES_HOST=localhost
@@ -141,7 +142,7 @@ az search service create \
   --public-network-access enabled
 ```
 
-Set `AI_*`, `AZURE_FOUNDRY_PROJECT_ENDPOINT`, and `AZURE_AI_SEARCH_*` in `.env` from the created resources. Do not paste those values into source files.
+Set `AI_*` and `AZURE_AI_SEARCH_*` in `.env` from the created resources. Set `DOCUMENT_REPOSITORY_URL` to the branch containing the indexed sample documents. Do not paste keys into source files.
 
 ### Create and populate Foundry IQ
 
@@ -166,7 +167,7 @@ The Free SKU is intended for a small proof of concept. It has limited storage, i
 
 ## Configure Microsoft Graph
 
-Create a single-page application registration in Microsoft Entra ID with `http://localhost:4200` as an SPA redirect URI. Put its application client ID in `ENTRAID_CLIENT_ID`.
+Create a single-page application registration in Microsoft Entra ID with `http://localhost:4200` as an SPA redirect URI. Put its application client ID in `ENTRAID_CLIENT_ID`. For a single-tenant registration, also set `ENTRAID_TENANT_ID` to the tenant ID. Leave it empty only for a multitenant registration that should use the `organizations` authority.
 
 Add these delegated Microsoft Graph permissions and grant tenant admin consent where required:
 
@@ -190,7 +191,7 @@ Configure an ACS resource with:
 - A connected email domain and sender address
 - The ACS connection string
 
-Add those values to `ACS_CONNECTION_STRING`, `ACS_PHONE_NUMBER`, and `ACS_EMAIL_ADDRESS`. The optional `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` override the sample customer destinations for safe testing.
+Add those values to `ACS_CONNECTION_STRING`, `ACS_PHONE_NUMBER`, and `ACS_EMAIL_ADDRESS`. Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate test destinations before enabling sends. The server ignores destinations supplied by the browser and sends only to these configured addresses. Communication and AI endpoints are rate-limited, and the API binds to loopback by default. If you expose the API through Codespaces or another proxy, keep the forwarded port private and add deployment-grade authentication before treating the sample as a hosted application.
 
 The server waits for the real ACS email operation result and checks each SMS result. It does not return fabricated send success.
 
@@ -202,7 +203,7 @@ Start PostgreSQL from the repository root:
 docker compose up -d
 ```
 
-If port `5432` is already in use, set `POSTGRES_PORT` in `.env` to another local port, such as `5435`; Docker Compose and the server use the same setting.
+If port `5432` is already in use, set `POSTGRES_PORT` in `.env` to another local port, such as `5435`; Docker Compose and the server use the same setting. PostgreSQL is pinned to version 18 and uses the versioned `postgres-data-v18` volume. If you have data from an older sample image, migrate it with `pg_dump`/`pg_restore` rather than mounting an older major-version data directory directly.
 
 Start the server:
 
@@ -210,8 +211,10 @@ Start the server:
 cd server/typescript
 npm install
 npm test
-npm start
+npm run dev
 ```
+
+For a production-style server start, run `npm run build` followed by `npm start`; production startup uses compiled JavaScript and does not require development dependencies.
 
 Start the client in another terminal:
 

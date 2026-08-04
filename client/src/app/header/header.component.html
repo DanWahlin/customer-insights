@@ -2,7 +2,9 @@
   <mat-icon class="home-icon">home</mat-icon>
   <span class="title">Customers App</span>
   <span class="spacer"></span>
-  <app-phone-call [hidden]="!callVisible" [customerPhoneNumber]="callData.phone!" (hangup)="hangup()"></app-phone-call>
+  @defer (when callVisible) {
+    <app-phone-call [customerPhoneNumber]="callData.phone!" (hangup)="hangup()"></app-phone-call>
+  }
   @if (this.featureFlags.microsoft365Enabled) {
     @if (this.graphService.isSignedIn()) {
       <button mat-button type="button" (click)="logout()">Sign out</button>

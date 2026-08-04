@@ -9,7 +9,7 @@ import { EmailSmsDialogData } from './email-sms-dialog-data';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { environment } from '../../environments/environment';
+
 
 @Component({
     selector: 'app-email-sms-dialog',
@@ -74,37 +74,40 @@ We're sorry.`
 
   sendEmail() {
     if (this.featureFlags.acsEmailEnabled) {
-      // Using CUSTOMER_EMAIL_ADDRESS instead of this.data.email for testing purposes
       this.subscription.add(
         this.acsService.sendEmail(this.emailSubject, this.emailBody, 
-            this.getFirstName(this.data.customerName), environment.CUSTOMER_EMAIL_ADDRESS /* this.data.email */)
-          .subscribe(res => {
-            console.log('Email sent:', res);
-            if (res.status) {
-              this.emailSent = true;
+            this.getFirstName(this.data.customerName), this.data.customerEmailAddress)
+          .subscribe({
+            next: res => {
+              if (res.status) this.emailSent = true;
+            },
+            error: error => {
+              this.error = error?.error?.message ?? 'Email delivery failed.';
             }
           })
       );
     }
     else {
-      this.emailSent = true;
+      this.error = 'Azure Communication Services email is not configured.';
     }
   }
 
   sendSms() {
     if (this.featureFlags.acsPhoneEnabled) {
-      // Using CUSTOMER_PHONE_NUMBER instead of this.data.customerPhoneNumber for testing purposes
       this.subscription.add(
-        this.acsService.sendSms(this.smsMessage, environment.CUSTOMER_PHONE_NUMBER /* this.data.customerPhoneNumber */)
-          .subscribe(res => {
-            if (res.status) {
-              this.smsSent = true;
+        this.acsService.sendSms(this.smsMessage, this.data.customerPhoneNumber)
+          .subscribe({
+            next: res => {
+              if (res.status) this.smsSent = true;
+            },
+            error: error => {
+              this.error = error?.error?.message ?? 'SMS delivery failed.';
             }
-        })
+          })
       );
     }
     else {
-      this.smsSent = true;
+      this.error = 'Azure Communication Services SMS is not configured.';
     }
   }
 

@@ -8,4 +8,5 @@ export class FeatureFlagsService {
     acsEmailEnabled = environment.ACS_EMAIL_ADDRESS;
     aiEnabled = environment.AI_ENABLED;
     foundryIQEnabled = environment.FOUNDRY_IQ_ENABLED;
+    teamsEnabled = environment.TEAMS_ENABLED;
 }

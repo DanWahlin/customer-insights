@@ -42,9 +42,11 @@ test('extractDocument reads XLSX worksheets', async () => {
   assert.ok(document.content.length > 20);
 });
 
-test('extractDocuments reads every supported customer document', async () => {
-  const documents = await extractDocuments(documentsDirectory);
+test('extractDocuments reads every nonempty supported customer document', async () => {
+  const skipped: string[] = [];
+  const documents = await extractDocuments(documentsDirectory, fileName => skipped.push(fileName));
 
   assert.equal(documents.length, 5);
+  assert.deepEqual(skipped, ['Tailwind-Traders-Supplies.xlsx']);
   assert.ok(documents.every(document => document.content.length > 0));
 });

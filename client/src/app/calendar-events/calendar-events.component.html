@@ -6,7 +6,7 @@
         <div class="root">
           <div class="time-container">
             @if (event.start?.dateTime) {
-              <div class="date">{{ dayFromDateTime(event.start.dateTime) }}</div>
+              <div class="date">{{ dayFromDateTime(event.start.dateTime, event.isAllDay) }}</div>
             }
             <div class="time">{{ timeRangeFromEvent(event) }}</div>
           </div>

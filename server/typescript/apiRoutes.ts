@@ -1,17 +1,17 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import './config';
 
 import { createACSToken, sendEmail, sendSms } from './acs';
-import { initializeDb } from './initDatabase';
 import { completeEmailSMSMessages, getSQLFromNLP } from './openAI';
 import { answerWithFoundryIQ } from './foundryIQ';
 import { getCustomers, queryDb } from './postgres';
 
 const router = Router();
+const aiLimiter = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false });
+const communicationLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false });
 
-initializeDb().catch(err => console.error(err));
-
-router.get('/acstoken', async (_req, res) => {
+router.get('/acstoken', communicationLimiter, async (_req, res) => {
     try {
         res.json(await createACSToken());
     }
@@ -37,11 +37,11 @@ router.get('/customers', async (req, res) => {
     }
 });
 
-router.post('/generateSql', async (req: Request, res: Response): Promise<void> => {
+router.post('/generateSql', aiLimiter, async (req: Request, res: Response): Promise<void> => {
     const userPrompt = req.body.prompt;
 
-    if (!userPrompt) {
-        res.status(400).json({ error: 'Missing parameter "prompt".' });
+    if (typeof userPrompt !== 'string' || !userPrompt.trim() || userPrompt.length > 4000) {
+        res.status(400).json({ error: 'The prompt must be a nonempty string of at most 4,000 characters.' });
         return;
     }
 
@@ -64,10 +64,13 @@ router.post('/generateSql', async (req: Request, res: Response): Promise<void> =
     }
 });
 
-router.post('/sendEmail', async (req: Request, res: Response): Promise<void> => {
+router.post('/sendEmail', communicationLimiter, async (req: Request, res: Response): Promise<void> => {
     const { subject, message, customerName, customerEmailAddress } = req.body;
 
-    if (!subject || !message || !customerName || !customerEmailAddress) {
+    if (typeof subject !== 'string' || !subject.trim() || subject.length > 500 ||
+        typeof message !== 'string' || !message.trim() || message.length > 10_000 ||
+        typeof customerName !== 'string' || !customerName.trim() || customerName.length > 200 ||
+        typeof customerEmailAddress !== 'string' || !customerEmailAddress.trim()) {
         res.status(400).json({
             status: false,
             message: 'The subject, message, customerName, and customerEmailAddress parameters must be provided!'
@@ -76,7 +79,12 @@ router.post('/sendEmail', async (req: Request, res: Response): Promise<void> => 
     }
 
     try {
-        const sendResults = await sendEmail(subject, message, customerName, customerEmailAddress);
+        const approvedDestination = process.env.CUSTOMER_EMAIL_ADDRESS;
+        if (!approvedDestination) {
+            res.status(503).json({ status: false, message: 'Email delivery is not configured.' });
+            return;
+        }
+        const sendResults = await sendEmail(subject, message, customerName, approvedDestination);
         res.json({
             status: sendResults.status,
             messageId: sendResults.id
@@ -91,11 +99,12 @@ router.post('/sendEmail', async (req: Request, res: Response): Promise<void> => 
     }
 });
 
-router.post('/sendSms', async (req: Request, res: Response): Promise<void> => {
+router.post('/sendSms', communicationLimiter, async (req: Request, res: Response): Promise<void> => {
     const message = req.body.message;
     const customerPhoneNumber = req.body.customerPhoneNumber;
 
-    if (!message || !customerPhoneNumber) {
+    if (typeof message !== 'string' || !message.trim() || message.length > 160 ||
+        typeof customerPhoneNumber !== 'string' || !customerPhoneNumber.trim()) {
         res.status(400).json({
             status: false,
             message: 'The message and customerPhoneNumber parameters must be provided!'
@@ -104,7 +113,12 @@ router.post('/sendSms', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        const [sendResult] = await sendSms(message, customerPhoneNumber);
+        const approvedDestination = process.env.CUSTOMER_PHONE_NUMBER;
+        if (!approvedDestination) {
+            res.status(503).json({ status: false, message: 'SMS delivery is not configured.' });
+            return;
+        }
+        const [sendResult] = await sendSms(message, approvedDestination);
         if (!sendResult) throw new Error('ACS returned no SMS send result.');
         res.json({
             status: sendResult.successful,
@@ -120,10 +134,12 @@ router.post('/sendSms', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-router.post('/completeEmailSmsMessages', async (req: Request, res: Response): Promise<void> => {
+router.post('/completeEmailSmsMessages', aiLimiter, async (req: Request, res: Response): Promise<void> => {
     const { prompt, company, contactName } = req.body;
 
-    if (!prompt || !company || !contactName) {
+    if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000 ||
+        typeof company !== 'string' || !company.trim() || company.length > 200 ||
+        typeof contactName !== 'string' || !contactName.trim() || contactName.length > 200) {
         res.status(400).json({ 
             status: false, 
             error: 'The prompt, company, and contactName parameters must be provided.' 
@@ -131,19 +147,16 @@ router.post('/completeEmailSmsMessages', async (req: Request, res: Response): Pr
         return;
     }
 
-    let result;
     try {
-        // Call OpenAI to get the email and SMS message completions
-       result = await completeEmailSMSMessages(prompt, company, contactName);
+        res.json(await completeEmailSMSMessages(prompt, company, contactName));
     }
-    catch (e: unknown) {
-        console.error('Error parsing JSON:', e);
+    catch (error: unknown) {
+        console.error('Message generation failed:', error);
+        res.status(500).json({ status: false, error: 'Message generation failed.' });
     }
-
-    res.json(result);
 });
 
-router.post('/foundryIq', async (req: Request, res: Response): Promise<void> => {
+router.post('/foundryIq', aiLimiter, async (req: Request, res: Response): Promise<void> => {
     const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000) {
@@ -159,7 +172,7 @@ router.post('/foundryIq', async (req: Request, res: Response): Promise<void> => 
     catch (error: unknown) {
         console.error('Foundry IQ request failed:', error);
         res.status(500).json({
-            error: error instanceof Error ? error.message : 'Foundry IQ request failed.'
+            error: 'Foundry IQ request failed.'
         });
     }
 });

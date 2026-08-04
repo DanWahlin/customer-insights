@@ -15,11 +15,12 @@ type CalendarEvent = {
 })
 export class CalendarEventsComponent extends RelatedContentBaseComponent {
   override async search(query: string) {
-    this.data = await this.graphService.searchCalendarEvents(query);
+    await this.updateWithLatest(() => this.graphService.searchCalendarEvents(query));
   }
 
-  dayFromDateTime(dateTimeString: string) {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(this.parseUtcDateTime(dateTimeString));
+  dayFromDateTime(dateTimeString: string, isAllDay = false) {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'long' })
+      .format(isAllDay ? this.parseDateOnly(dateTimeString) : this.parseUtcDateTime(dateTimeString));
   }
 
   timeRangeFromEvent(event: CalendarEvent) {
@@ -33,5 +34,10 @@ export class CalendarEventsComponent extends RelatedContentBaseComponent {
   private parseUtcDateTime(dateTimeString: string): Date {
     const hasOffset = /(?:Z|[+-]\d{2}:\d{2})$/i.test(dateTimeString);
     return new Date(hasOffset ? dateTimeString : `${dateTimeString}Z`);
+  }
+
+  private parseDateOnly(dateTimeString: string): Date {
+    const [year, month, day] = dateTimeString.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day);
   }
 }

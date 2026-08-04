@@ -22,7 +22,7 @@
 - Create: `server/typescript/documentIngestion.ts`
 - Create: `server/typescript/tests/documentIngestion.test.ts`
 
-**Objective:** Extract DOCX, XLSX, and SVG text and split it into bounded overlapping chunks.
+**Objective:** Extract DOCX and XLSX text, explicitly report empty files, and split nonempty content into bounded overlapping chunks.
 
 **Verification:** Node test runner passes against fixtures and the repository's customer documents.
 

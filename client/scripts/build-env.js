@@ -30,14 +30,15 @@ function updateEnvironment(isProd = false) {
     production: isProd,
     apiUrl: env.NG_APP_API_URL || '',
     ENTRAID_CLIENT_ID: env.ENTRAID_CLIENT_ID || '',
+    ENTRAID_TENANT_ID: env.ENTRAID_TENANT_ID || '',
     TEAM_ID: env.TEAM_ID || '',
     CHANNEL_ID: env.CHANNEL_ID || '',
+    TEAMS_ENABLED: !!(env.TEAM_ID && env.CHANNEL_ID),
     AI_ENABLED: !!env.AI_API_KEY,
     ACS_CONNECTION_STRING: !!env.ACS_CONNECTION_STRING,
     ACS_PHONE_NUMBER: env.ACS_PHONE_NUMBER || '',
     ACS_EMAIL_ADDRESS: !!env.ACS_EMAIL_ADDRESS,
-    CUSTOMER_EMAIL_ADDRESS: env.CUSTOMER_EMAIL_ADDRESS || '',
-    CUSTOMER_PHONE_NUMBER: env.CUSTOMER_PHONE_NUMBER || '',
+
     API_PORT: env.API_PORT || '',
     FOUNDRY_IQ_ENABLED: !!(env.AZURE_AI_SEARCH_ENDPOINT && env.AZURE_AI_SEARCH_KNOWLEDGE_BASE)
   };
