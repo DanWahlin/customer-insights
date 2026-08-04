@@ -1,193 +1,69 @@
-import fs from 'fs';
-import { OpenAI, AzureOpenAI } from 'openai';
-import { QueryData, EmailSmsResponse, AzureOpenAIYourDataResponse } from './interfaces';
+import fs from 'node:fs';
+import OpenAI from 'openai';
+import { QueryData, EmailSmsResponse } from './interfaces';
 import './config';
 
 const {
-    OPENAI_API_KEY,
-    OPENAI_ENDPOINT,
-    OPENAI_MODEL,
-    OPENAI_API_VERSION,
-    AZURE_AI_SEARCH_ENDPOINT,
-    AZURE_AI_SEARCH_KEY,
-    AZURE_AI_SEARCH_INDEX
+    AI_API_KEY,
+    AI_ENDPOINT,
+    AI_MODEL
 } = process.env as Record<string, string>;
 
-function callOpenAI(systemPrompt: string, userPrompt: string, temperature = 0, useBYOD = false) {
-    const isAzureOpenAI = OPENAI_API_KEY && OPENAI_ENDPOINT && OPENAI_MODEL;
+async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    checkRequiredEnvVars(['AI_API_KEY', 'AI_MODEL']);
 
-    if (isAzureOpenAI) {
-        if (useBYOD) {
-            return getAzureOpenAIBYODCompletion(systemPrompt, userPrompt, temperature);
-        }
-        return getAzureOpenAICompletion(systemPrompt, userPrompt, temperature);
-    }
-
-    return getOpenAICompletion(systemPrompt, userPrompt, temperature);
-}
-
-async function createAzureOpenAICompletion(systemPrompt: string, userPrompt: string, temperature: number, dataSources?: any[]): Promise<any> {
-    const baseEnvVars = ['OPENAI_API_KEY', 'OPENAI_ENDPOINT', 'OPENAI_MODEL'];
-    const byodEnvVars = ['AZURE_AI_SEARCH_ENDPOINT', 'AZURE_AI_SEARCH_KEY', 'AZURE_AI_SEARCH_INDEX'];
-    const requiredEnvVars = dataSources ? [...baseEnvVars, ...byodEnvVars] : baseEnvVars;
-    checkRequiredEnvVars(requiredEnvVars);
-
-    const config = { 
-        apiKey: OPENAI_API_KEY,
-        endpoint: OPENAI_ENDPOINT,
-        apiVersion: OPENAI_API_VERSION,
-        deployment: OPENAI_MODEL
-    };
-    const aoai = new AzureOpenAI(config);
-    const completion = await aoai.chat.completions.create({
-        model: OPENAI_MODEL, // gpt-4o, gpt-3.5-turbo, etc. Pulled from .env file
-        max_tokens: 1024,
-        temperature,
-        response_format: {
-            type: "json_object",
-        },
-        messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-        ],
-        // @ts-expect-error data_sources is a custom property used with the "Azure Add Your Data" feature
-        data_sources: dataSources
+    const client = new OpenAI({
+        apiKey: AI_API_KEY,
+        ...(AI_ENDPOINT ? { baseURL: `${AI_ENDPOINT.replace(/\/$/, '')}/openai/v1/` } : {})
     });
-    return completion;
-}
-
-async function getAzureOpenAICompletion(systemPrompt: string, userPrompt: string, temperature: number): Promise<string> {
-    const completion = await createAzureOpenAICompletion(systemPrompt, userPrompt, temperature);
-    let content = completion.choices[0]?.message?.content?.trim() ?? '';
-    console.log('Azure OpenAI Output: \n', content);
-    if (content && content.includes('{') && content.includes('}')) {
-        content = extractJson(content);
-    }
-    return content;
-}
-
-async function getAzureOpenAIBYODCompletion(systemPrompt: string, userPrompt: string, temperature: number): Promise<string> {
-    const dataSources = [
-        {
-            type: 'azure_search',
-            parameters: {
-                authentication: {
-                    type: 'api_key',
-                    key: AZURE_AI_SEARCH_KEY
-                },
-                endpoint: AZURE_AI_SEARCH_ENDPOINT,
-                index_name: AZURE_AI_SEARCH_INDEX
-            }
-        }
-    ];
-
-    const completion = await createAzureOpenAICompletion(systemPrompt, userPrompt, temperature, dataSources) as AzureOpenAIYourDataResponse;
-    console.log('Azure OpenAI Add Your Own Data Output: \n', completion.choices[0]?.message);
-    for (let citation of completion.choices[0]?.message?.context?.citations ?? []) {
-        console.log('Citation Path:', citation.filepath);
-    }
-    return completion.choices[0]?.message?.content?.trim() ?? '';
-}
-
-async function getOpenAICompletion(systemPrompt: string, userPrompt: string, temperature = 0): Promise<string> {
-    await checkRequiredEnvVars(['OPENAI_API_KEY']);
-
-    try {
-        const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o', // gpt-4o, gpt-3.5-turbo, etc. Note that this can be retrieve from OPENAI_MODEL env var
-            max_tokens: 1024,
-            temperature,
-            response_format: {
-                type: "json_object",
-            },
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ]
-        });
-
-        let content = completion.choices[0]?.message?.content?.trim() ?? '';
-        console.log('OpenAI Output: \n', content);
-        if (content && content.includes('{') && content.includes('}')) {
-            content = extractJson(content);
-        }
-        return content;
-    }
-    catch (e) {
-        console.error('Error getting data:', e);
-        throw e;
-    }
-}
-
-async function completeBYOD(userPrompt: string): Promise<string> {
-    const systemPrompt = 'You are an AI assistant that helps people find information in documents.';
-    return await callOpenAI(systemPrompt, userPrompt, 0, true);
+    const response = await client.responses.create({
+        model: AI_MODEL,
+        instructions: systemPrompt,
+        input: userPrompt
+    });
+    return response.output_text.trim();
 }
 
 async function getSQLFromNLP(userPrompt: string): Promise<QueryData> {
-    // Get the high-level database schema summary to be used in the prompt.
-    // The db.schema file could be generated by a background process or the 
-    // schema could be dynamically retrieved.
     const dbSchema = await fs.promises.readFile('db.schema', 'utf8');
-
     const systemPrompt = `
-      Assistant is a natural language to SQL bot that returns a JSON object with the SQL query and 
-      the parameter values in it. The SQL will query a PostgreSQL database.
-      
-      PostgreSQL tables with their columns:    
-  
+      You convert natural language into safe PostgreSQL SELECT queries and return only a JSON object.
+
+      PostgreSQL tables with their columns:
       ${dbSchema}
-  
+
       Rules:
-      - Convert any strings to a PostgreSQL parameterized query value to avoid SQL injection attacks.
-      - Return a JSON object with the following structure: { "sql": "", "paramValues": [] }
+      - Generate SELECT statements only.
+      - Convert user-controlled values to PostgreSQL positional parameters such as $1.
+      - Return exactly: { "sql": "", "paramValues": [] }
 
       Examples:
-
-      User: "Display all company reviews. Group by company."      
+      User: "Display all company reviews. Group by company."
       Assistant: { "sql": "SELECT * FROM reviews", "paramValues": [] }
 
-      User: "Display all reviews for companies located in cities that start with 'L'."
-      Assistant: { "sql": "SELECT r.* FROM reviews r INNER JOIN customers c ON r.customer_id = c.id WHERE c.city LIKE 'L%'", "paramValues": [] }
+      User: "Display all reviews for companies located in cities that start with L."
+      Assistant: { "sql": "SELECT r.* FROM reviews r INNER JOIN customers c ON r.customer_id = c.id WHERE c.city LIKE $1", "paramValues": ["L%"] }
 
       User: "Display revenue for companies located in London. Include the company name and city."
-      Assistant: { 
-        "sql": "SELECT c.company, c.city, SUM(o.total) AS revenue FROM customers c INNER JOIN orders o ON c.id = o.customer_id WHERE c.city = $1 GROUP BY c.company, c.city", 
-        "paramValues": ["London"] 
-      }
-
-      User: "Get the total revenue for Adventure Works Cycles. Include the contact information as well."
-      Assistant: { 
-        "sql": "SELECT c.company, c.city, c.email, SUM(o.total) AS revenue FROM customers c INNER JOIN orders o ON c.id = o.customer_id WHERE c.company = $1 GROUP BY c.company, c.city, c.email", 
-        "paramValues": ["Adventure Works Cycles"] 
-      }
+      Assistant: { "sql": "SELECT c.company, c.city, SUM(o.total) AS revenue FROM customers c INNER JOIN orders o ON c.id = o.customer_id WHERE c.city = $1 GROUP BY c.company, c.city", "paramValues": ["London"] }
     `;
 
     let queryData: QueryData = { sql: '', paramValues: [], error: '' };
     let results = '';
-
     try {
-        results = await callOpenAI(systemPrompt, userPrompt);
-        if (results) {
-            console.log('results', results);
-            const parsedResults = JSON.parse(results);
-            queryData = { ...queryData, ...parsedResults };
-            if (isProhibitedQuery(queryData.sql)) {
-                queryData.sql = '';
-                queryData.error = 'Prohibited query.';
-            }
-        }
-    } catch (error) {
-        console.log(error);
-        if (isProhibitedQuery(results)) {
+        results = await callAI(systemPrompt, userPrompt);
+        const json = extractJson(results);
+        if (!json) throw new Error('The model did not return a JSON query object.');
+        queryData = { ...queryData, ...JSON.parse(json) };
+        if (isProhibitedQuery(queryData.sql)) {
             queryData.sql = '';
             queryData.error = 'Prohibited query.';
-        } else {
-            queryData.error = results;
         }
+    } catch (error) {
+        console.error('Error generating SQL:', error);
+        queryData.sql = '';
+        queryData.error = error instanceof Error ? error.message : 'Error generating SQL.';
     }
-
     return queryData;
 }
 
@@ -203,54 +79,41 @@ function isProhibitedQuery(query: string): boolean {
         'grant', 'revoke', 'rollback', 'commit', 'savepoint', 'vacuum', 'analyze'
     ];
     const queryLower = query.toLowerCase();
-    return prohibitedKeywords.some(keyword => queryLower.includes(keyword));
+    return prohibitedKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(queryLower));
 }
 
-async function completeEmailSMSMessages(prompt: string, company: string, contactName: string) {
-    console.log('Inputs:', prompt, company, contactName);
-
+async function completeEmailSMSMessages(prompt: string, company: string, contactName: string): Promise<EmailSmsResponse> {
     const systemPrompt = `
-      Assistant is a bot designed to help users create email and SMS messages from data and 
-      return a JSON object with the email and SMS message information in it.
+      You help customer-service employees create email and SMS messages and return only a JSON object.
 
       Rules:
-      - Generate a subject line for the email message.
-      - Use the User Rules to generate the messages. 
-      - All messages should have a friendly tone and never use inappropriate language.
-      - SMS messages should be in plain text format and NO MORE than 160 characters. 
-      - Start the message with "Hi <Contact Name>,\n\n". Contact Name can be found in the user prompt.
-      - Add carriage returns to the email message to make it easier to read. 
-      - End with a signature line that says "Sincerely,\nCustomer Service".
-      - Return a valid JSON object with the emailSubject, emailBody, and SMS message values in it:
-
-      { "emailSubject": "", "emailBody": "", "sms": "" }
-
-      - The sms property value should be in plain text format and NO MORE than 160 characters.
+      - Generate an email subject and body.
+      - Follow the user's message rules.
+      - Keep a friendly, professional tone.
+      - SMS must be plain text and no more than 160 characters.
+      - Start the email with "Hi <Contact Name>,".
+      - End the email with "Sincerely,\\nCustomer Service".
+      - Return exactly: { "emailSubject": "", "emailBody": "", "sms": "" }
     `;
+    const userPrompt = `Company: ${company}\nContact Name: ${contactName}\nMessage Rules: ${prompt}`;
 
-    const userPrompt = `
-      User Rules: 
-      ${prompt}
-
-      Contact Name: 
-      ${contactName}
-    `;
-
-    let content: EmailSmsResponse = { status: true, email: '', sms: '', error: '' };
-    let results = '';
+    let content: EmailSmsResponse = {
+        status: true,
+        emailSubject: '',
+        emailBody: '',
+        sms: '',
+        error: ''
+    };
     try {
-        results = await callOpenAI(systemPrompt, userPrompt, 0.5);
-        if (results) {
-            const parsedResults = JSON.parse(results);
-            content = { ...content, ...parsedResults, status: true };
-        }
-    }
-    catch (e) {
-        console.log(e);
+        const results = await callAI(systemPrompt, userPrompt);
+        const json = extractJson(results);
+        if (!json) throw new Error('The model did not return a JSON message object.');
+        content = { ...content, ...JSON.parse(json), status: true };
+    } catch (error) {
+        console.error('Error generating email and SMS messages:', error);
         content.status = false;
-        content.error = results;
+        content.error = error instanceof Error ? error.message : 'Error generating messages.';
     }
-
     return content;
 }
 
@@ -263,15 +126,11 @@ function checkRequiredEnvVars(requiredEnvVars: string[]) {
 }
 
 function extractJson(content: string) {
-    const regex = /\{(?:[^{}]|{[^{}]*})*\}/g;
-    const match = content.match(regex);
-
-    if (match) {
-        // If we get back pure text it can have invalid carriage returns
-        return match[0].replace(/"([^"]*)"/g, (match) => match.replace(/\n/g, "\\n"));
-    } else {
-        return '';
-    }
+    const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
+    if (fenced) return fenced;
+    const start = content.indexOf('{');
+    const end = content.lastIndexOf('}');
+    return start >= 0 && end > start ? content.slice(start, end + 1) : '';
 }
 
-export { completeBYOD, completeEmailSMSMessages, getSQLFromNLP };
+export { completeEmailSMSMessages, getSQLFromNLP };

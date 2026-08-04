@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, inject } from '@angular/core';
+import { Component, OnInit, Inject, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { DataService } from '@core/data.service';
 import { DialogBase, TeamsDialogData } from './dialog-data';
@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
     selector: 'app-textarea-dialog',
     templateUrl: './textarea-dialog.component.html',
     styleUrls: ['./textarea-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatDialogModule, MatIconModule, FormsModule, MatButtonModule]
 })
 export class TextAreaDialogComponent implements OnInit {

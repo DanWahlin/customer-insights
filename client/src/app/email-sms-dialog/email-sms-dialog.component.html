@@ -6,7 +6,7 @@
             <mat-icon>close</mat-icon>
         </button>
         <mat-tab-group #tabgroup [animationDuration]="'0ms'" class="tab-group">
-            @if (this.featureFlags.openAIEnabled) {
+            @if (this.featureFlags.aiEnabled) {
                 <mat-tab label="Message Generator">
                     <div class="message-label">Message Rules:</div>
                     <br />

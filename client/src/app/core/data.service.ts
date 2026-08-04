@@ -4,7 +4,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-import { BYODCompletion, Customer } from '@shared/interfaces';
+import { Customer, FoundryIQAnswer } from '@shared/interfaces';
 import { EmailSmsCompletion } from '@shared/interfaces';
 import { ApiUrlService } from './api-url.service';
 
@@ -56,8 +56,8 @@ export class DataService {
       );
   }
 
-  completeBYOD(prompt: string): Observable<string> {
-    return this.http.post<string>(this.apiUrl + 'completeBYOD', { prompt })
+  askFoundryIQ(prompt: string): Observable<FoundryIQAnswer> {
+    return this.http.post<FoundryIQAnswer>(this.apiUrl + 'foundryIq', { prompt })
       .pipe(
         catchError(this.handleError)
       );

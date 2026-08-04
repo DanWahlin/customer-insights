@@ -1,18 +1,46 @@
-<h2 mat-dialog-title>Chat Help</h2>
+<h2 mat-dialog-title>Customer Document Assistant</h2>
 
-<div>
-    <mat-dialog-content class="mat-typography">
-        <button mat-dialog-close class="close-button">
-            <mat-icon>close</mat-icon>
-        </button>
-        <textarea type="text" [(ngModel)]="prompt" title="Message" [placeholder]="placeholder"></textarea>
-        @if (this.response) {
-            <div class="response">
-                {{ response }}
-            </div>
-        }
-        <div mat-dialog-actions align="end">
-            <button mat-stroked-button cdkFocusInitial (click)="getHelp()" [disabled]="!prompt">Get Help</button>
-        </div>
-    </mat-dialog-content>
+<mat-dialog-content class="mat-typography">
+  <button mat-dialog-close class="close-button" aria-label="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <p>Ask Foundry IQ about the customer documents indexed by this application.</p>
+  <textarea [(ngModel)]="prompt" title="Question" [placeholder]="placeholder"></textarea>
+
+  @if (loading) {
+    <p class="status">Searching the knowledge base and grounding an answer…</p>
+  }
+  @if (error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+  @if (result) {
+    <section class="response" aria-live="polite">
+      <h3>Answer</h3>
+      <p>{{ result.answer }}</p>
+      @if (result.citations.length) {
+        <h3>Sources</h3>
+        <ol>
+          @for (citation of result.citations; track citation.id) {
+            <li>
+              @if (citation.sourceUrl) {
+                <a [href]="citation.sourceUrl" target="_blank" rel="noopener">{{ citation.title }}</a>
+              } @else {
+                {{ citation.title }}
+              }
+              @if (citation.customerName !== 'General') {
+                <span> — {{ citation.customerName }}</span>
+              }
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  }
+</mat-dialog-content>
+
+<div mat-dialog-actions align="end">
+  <button mat-stroked-button cdkFocusInitial (click)="getHelp()" [disabled]="!prompt.trim() || loading">
+    {{ loading ? 'Working…' : 'Ask Foundry IQ' }}
+  </button>
 </div>

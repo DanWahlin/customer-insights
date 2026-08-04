@@ -10,10 +10,17 @@ export interface EmailSmsCompletion {
     status: boolean;
 }
 
-export interface BYODCompletion {
-    status: boolean;
-    content: string;
-    error: string;
+export interface FoundryIQCitation {
+    id: string;
+    title: string;
+    sourcePath: string;
+    sourceUrl: string;
+    customerName: string;
+}
+
+export interface FoundryIQAnswer {
+    answer: string;
+    citations: FoundryIQCitation[];
 }
 
 export interface Customer {
@@ -69,19 +76,21 @@ export interface OneDriveFile {
   }
   
   export interface ChatMessageInfo {
-    teamId: string; 
-    channelId: string;  
-    messageId: string; 
-    summary: string; 
+    teamId?: string;
+    channelId?: string;
+    chatId?: string;
+    messageId: string;
+    summary: string;
   }
   
   export interface ChatMessage {
     id: string;
     teamId: string;
     channelId: string;
+    chatId?: string;
     summary: string;
     body: string;
     from: string;
-    date: Date;
+    date: string;
     webUrl: string;
   }

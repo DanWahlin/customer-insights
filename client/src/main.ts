@@ -1,4 +1,4 @@
-import { importProvidersFrom } from '@angular/core';
+import { importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -9,11 +9,10 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
-import { withInterceptorsFromDi, provideHttpClient, withInterceptors, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { withInterceptorsFromDi, provideHttpClient, HTTP_INTERCEPTORS, withXhr } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
-import { registerMgtLoginComponent, registerMgtSearchResultsComponent, registerMgtPersonComponent,  } from '@microsoft/mgt-components';
 import { PhonePipe } from '@shared/phone.pipe';
 import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { OverlayRequestResponseInterceptor } from '@core/overlay/overlay-request-response.interceptor';
@@ -21,11 +20,12 @@ import { OverlayRequestResponseInterceptor } from '@core/overlay/overlay-request
 
 bootstrapApplication(AppComponent, {
     providers: [
-        importProvidersFrom(BrowserModule, FormsModule, MatBadgeModule, MatButtonModule, MatCardModule, 
-          MatDialogModule, MatExpansionModule, MatMenuModule, MatTabsModule, MatToolbarModule, MatIconModule),       
+        provideZoneChangeDetection(),
+        importProvidersFrom(BrowserModule, FormsModule, MatBadgeModule, MatButtonModule, MatCardModule,
+          MatDialogModule, MatExpansionModule, MatMenuModule, MatTabsModule, MatToolbarModule, MatIconModule),
         CurrencyPipe, DatePipe, DecimalPipe, PhonePipe, TitleCasePipe,
         provideAnimations(),
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
         {
           provide: HTTP_INTERCEPTORS,
           useClass: OverlayRequestResponseInterceptor,
@@ -34,8 +34,3 @@ bootstrapApplication(AppComponent, {
     ]
   })
   .catch(err => console.error(err));
-
-  // Required to use Microsoft Graph Toolkit components
-  registerMgtLoginComponent();
-  registerMgtSearchResultsComponent();
-  registerMgtPersonComponent();

@@ -6,6 +6,6 @@ export class FeatureFlagsService {
     microsoft365Enabled = (environment.ENTRAID_CLIENT_ID) ? true : false;
     acsPhoneEnabled = (environment.ACS_PHONE_NUMBER) ? true : false;
     acsEmailEnabled = environment.ACS_EMAIL_ADDRESS;
-    openAIEnabled = environment.OPENAI_API_KEY;
-    byodEnabled = environment.BYOD_ENABLED;
+    aiEnabled = environment.AI_ENABLED;
+    foundryIQEnabled = environment.FOUNDRY_IQ_ENABLED;
 }

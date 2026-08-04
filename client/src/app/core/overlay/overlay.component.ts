@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { EventBusService, Events } from '../eventbus.service';
 import { Subscription } from 'rxjs';
@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
     selector: 'app-overlay',
     templateUrl: './overlay.component.html',
     styleUrls: ['./overlay.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: true
 })
 export class OverlayComponent implements OnInit, OnDestroy {

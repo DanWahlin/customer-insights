@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { Subscription } from 'rxjs';
@@ -15,6 +15,7 @@ import { environment } from '../../environments/environment';
     selector: 'app-email-sms-dialog',
     templateUrl: './email-sms-dialog.component.html',
     styleUrls: ['./email-sms-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatDialogModule, MatIconModule, MatTabsModule, FormsModule, MatButtonModule]
 })
 export class EmailSmsDialogComponent implements OnInit, OnDestroy {

@@ -1,170 +1,248 @@
-# Using OpenAI, Azure Communication Services, and Microsoft Graph/Microsoft Graph Toolkit to Build a Line of Business (LOB) Application
+# OpenAI, Azure Communication Services, Foundry IQ, and Microsoft Graph LOB Sample
 
-This application demonstrates how OpenAI, Azure Communication Services, and Microsoft Graph/Microsoft Graph Toolkit can be used in Line of Business (LOB) applications to improve the user experience, increase productivity, and take LOB apps to the next level.
+This sample shows how a line-of-business application can combine current Microsoft AI, communication, and organizational-data services without forcing users to switch between Outlook, Teams, OneDrive, and separate customer systems.
 
-- **AI**: Enable natural language to SQL queries using OpenAI to enable users to ask questions in natural language and get answers back in SQL. Automatically generate email and SMS messages using OpenAI completions.
-- **Communication**: Enable in-app phone calling to customers and SMS functionality using Azure Communication Services.
-- **Organizational Data**: Pull in related organizational data that users may need (documents, chats, emails, calendar events) as they work with customers to avoid context switching. Adding these features reduces the need for the user to switch to Outlook, Teams, OneDrive, other custom apps, their phone, etc. since the specific data and functionality they need is provided directly in the app.
+- **Microsoft Foundry and Foundry IQ** ground customer-document answers through an Azure AI Search knowledge base. The Node server generates the final answer with the OpenAI-compatible Responses API and returns source citations.
+- **Generative AI** converts natural language into parameterized PostgreSQL `SELECT` statements and drafts email and SMS messages.
+- **Azure Communication Services (ACS)** provides browser calling, SMS, and email delivery.
+- **Microsoft Graph** supplies permission-aware files, email, calendar events, Teams chats, and channel posting through direct Graph calls and MSAL Browser. Microsoft Graph Toolkit is not used.
 
-[View the full tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph) to learn how to build this application and the code that is used to enable the AI, Communication, and Organizational Data features.
+The [original Microsoft Learn tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph) explains the initial scenarios. This repository now uses a newer authentication, Graph, Foundry, Search, and OpenAI architecture.
 
-## Prequisites
+## Architecture
 
-You'll need the following to run the full version of the sample:
+```text
+Angular 22
+  ├─ MSAL Browser → Microsoft Graph
+  ├─ ACS Calling SDK → Azure Communication Services
+  └─ Express 5 API
+       ├─ Foundry IQ → Azure AI Search Free knowledge base
+       │    └─ gpt-5-mini Responses API → grounded answer + citations
+       ├─ gpt-5-mini → SQL and message generation
+       ├─ PostgreSQL
+       └─ ACS Email and SMS SDKs
+```
 
-- [Node](https://nodejs.org) - Node 16+ and npm 7+ will be used for this project
-- [git](https://learn.microsoft.com/devops/develop/git/install-and-set-up-git?WT.mc_id=m365-94501-dwahlin)
-- [Visual Studio Code](https://code.visualstudio.com?WT.mc_id=m365-94501-dwahlin) (while we'll reference Visual Studio Code in this tutorial, any editor can be used)
-- [Azure subscription](https://azure.microsoft.com/free/search?WT.mc_id=m365-94501-dwahlin)
-- [Microsoft 365 developer tenant](https://developer.microsoft.com/microsoft-365/dev-program?WT.mc_id=m365-94501-dwahlin)
-- [Docker Desktop](https://www.docker.com/get-started/), [Podman](https://podman-desktop.io/downloads), [nerdctl](https://github.com/containerd/nerdctl) or another Open Container Initiative (OCI) compliant container runtime.
+Foundry IQ uses the generally available Azure AI Search `2026-04-01` knowledge-base API in extractive mode. The server, not Search, calls `gpt-5-mini` for answer generation. This allows the demo to use the Search Free SKU without requiring a Search managed identity.
 
+## Prerequisites
 
-## Running the App
+- Node.js 24.15 or later and npm
+- Git
+- Docker, Podman, or another OCI-compatible container runtime
+- Azure CLI authenticated to the target subscription
+- Azure subscription
+- Microsoft 365 tenant with sample files, mail, calendar events, and Teams messages
 
-This application has 3 main features that can be individually enabled depending on what you'd like to use. The features include:
+## Environment
 
-- **AI**: OpenAI Service. Used to enable natural language to SQL queries, email and SMS message generation, and "bring your own data" functionality.
-- **Communication**: Azure Communication Services (ACS resource, phone number, and email domain). Used to enable in-app phone calling to customers and Email/SMS sending functionality.
-- **Organizational Data**: Azure Active Directory, Microsoft Graph, Microsoft Graph Toolkit, and (optionally) Teams channels. Used to pull in related company documents, chats, emails, and calendar events and even send a message into a Teams channel.
+Copy `.env.example` to `.env` at the repository root. `.env` is ignored by Git.
 
-Enable the features you'd like, ignore those you don't want, and the app will still run. You can [View the full tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph?WT.mc_id=m365-94501-dwahlin) to learn how to build this application or go through the high-level summary that follows.
+```dotenv
+ENTRAID_CLIENT_ID=
+TEAM_ID=
+CHANNEL_ID=
+AI_API_KEY=
+AI_ENDPOINT=
+AI_MODEL=gpt-5-mini
+AI_EMBEDDING_MODEL=text-embedding-3-small
+AZURE_FOUNDRY_PROJECT_ENDPOINT=
+AZURE_AI_SEARCH_ENDPOINT=
+AZURE_AI_SEARCH_KEY=
+AZURE_AI_SEARCH_INDEX=customer-documents-index
+AZURE_AI_SEARCH_KNOWLEDGE_SOURCE=customer-documents-ks
+AZURE_AI_SEARCH_KNOWLEDGE_BASE=customer-documents-kb
+POSTGRES_USER=web
+POSTGRES_PASSWORD=web-password
+POSTGRES_HOST=localhost
+POSTGRES_DATABASE=CustomersDB
+POSTGRES_PORT=5432
+ACS_CONNECTION_STRING=
+ACS_PHONE_NUMBER=
+ACS_EMAIL_ADDRESS=
+CUSTOMER_EMAIL_ADDRESS=
+CUSTOMER_PHONE_NUMBER=
+API_PORT=3000
+API_HOST=127.0.0.1
+CLIENT_ORIGIN=http://localhost:4200
+```
 
-1. To start, rename the provided *.env.example* file to *.env* in the *tutorials/openai-msgraph-acs* folder. Note that it has the following values:
+Keep keys and connection strings server-side. The Angular environment generator emits feature booleans, not AI, Search, or ACS secrets.
 
-    ```
-    ENTRAID_CLIENT_ID=
-    TEAM_ID=
-    CHANNEL_ID=
-    OPENAI_API_KEY=
-    OPENAI_ENDPOINT=
-    OPENAI_API_VERSION=2023-06-01-preview
-    OPENAI_MODEL=gpt-35-turbo
-    POSTGRES_USER=
-    POSTGRES_PASSWORD=
-    ACS_CONNECTION_STRING=
-    ACS_PHONE_NUMBER=
-    ACS_EMAIL_ADDRESS=
-    CUSTOMER_EMAIL_ADDRESS=
-    CUSTOMER_PHONE_NUMBER=
-    API_PORT=3000
-    AZURE_AI_SEARCH_ENDPOINT=
-    AZURE_AI_SEARCH_KEY=
-    AZURE_AI_SEARCH_INDEX=
-    ```
+## Provision Microsoft Foundry and Azure AI Search
 
-1. Assign the following values to `POSTGRES_USER` and `POSTGRES_PASSWORD`.
+The deployed demo uses one region for every new resource:
 
-    ```
-    POSTGRES_USER=web
-    POSTGRES_PASSWORD=web-password
-    ```
+- Resource group: `rg_ai_acs_orgdata`
+- Region: South Central US
+- Foundry resource: Azure AI Services `S0` (model calls are consumption billed)
+- Foundry project: `proj-ai-acs-orgdata`
+- Azure AI Search: Free with the free Foundry IQ retrieval plan
 
-## Enable the AI Feature (OpenAI Service)
+Resource names must be globally unique. Choose a lowercase suffix before running these commands.
 
-1. If you'd like to try the natural language to SQL OpenAI functionality and email/SMS completions, add your [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/) key and endpoint into the `.env` file. You'll also need to create a model in your Azure OpenAI resource (such as a `gpt-35-turbo` model) and assign the model name to `OPENAI_MODEL` in the `.env` file.
+```bash
+RG=rg_ai_acs_orgdata
+LOCATION=southcentralus
+SUFFIX=<unique-lowercase-suffix>
+AI_ACCOUNT=ai-acs-orgdata-$SUFFIX
+SEARCH_SERVICE=srch-ai-acs-orgdata-$SUFFIX
+PROJECT=proj-ai-acs-orgdata
 
-    ```
-    OPENAI_API_KEY=<AZURE_OPENAI_SECRET_KEY>
-    OPENAI_ENDPOINT=<AZURE_OPENAI_ENDPOINT>
-    OPENAI_MODEL=<AZURE_OPENAI_MODEL_NAME>
-    ```
+az group create --name "$RG" --location "$LOCATION"
 
-    Alternatively, you can use OpenAI instead by adding your [OpenAI](https://platform.openai.com/account/api-keys) secret key into the `.env` file and leaving the other associated OpenAI values blank.
+az cognitiveservices account create \
+  --name "$AI_ACCOUNT" \
+  --resource-group "$RG" \
+  --kind AIServices \
+  --sku S0 \
+  --location "$LOCATION" \
+  --custom-domain "$AI_ACCOUNT" \
+  --assign-identity \
+  --allow-project-management true \
+  --yes
 
-    ```
-    OPENAI_API_KEY=<OPENAI_SECRET_KEY>
-    ```
+az cognitiveservices account project create \
+  --name "$AI_ACCOUNT" \
+  --resource-group "$RG" \
+  --project-name "$PROJECT" \
+  --location "$LOCATION" \
+  --display-name "AI ACS Org Data" \
+  --assign-identity
 
-1. If you'd like to enable the "bring your own data" feature, go through the [steps in this tutorial](https://learn.microsoft.com/azure/cognitive-services/openai/use-your-data-quickstart) and update the Cognitive Search properties in the `.env` file with your resource's endpoint, key, and index name.
+az cognitiveservices account deployment create \
+  --resource-group "$RG" \
+  --name "$AI_ACCOUNT" \
+  --deployment-name gpt-5-mini \
+  --model-name gpt-5-mini \
+  --model-version 2025-08-07 \
+  --model-format OpenAI \
+  --sku-name GlobalStandard \
+  --sku-capacity 10
 
-    ```
-    AZURE_AI_SEARCH_ENDPOINT=
-    AZURE_AI_SEARCH_KEY=
-    AZURE_AI_SEARCH_INDEX=
-    ```
+az cognitiveservices account deployment create \
+  --resource-group "$RG" \
+  --name "$AI_ACCOUNT" \
+  --deployment-name text-embedding-3-small \
+  --model-name text-embedding-3-small \
+  --model-version 1 \
+  --model-format OpenAI \
+  --sku-name GlobalStandard \
+  --sku-capacity 120
 
-## Enable the Communication Feature (Azure Communication Services)
+az search service create \
+  --name "$SEARCH_SERVICE" \
+  --resource-group "$RG" \
+  --location "$LOCATION" \
+  --sku free \
+  --knowledge-retrieval free \
+  --auth-options aadOrApiKey \
+  --aad-auth-failure-mode http401WithBearerChallenge \
+  --public-network-access enabled
+```
 
-1. Create an Azure Communication Services (ACS) resource in the [Azure Portal](https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.Communication%2FCommunicationServices).
+Set `AI_*`, `AZURE_FOUNDRY_PROJECT_ENDPOINT`, and `AZURE_AI_SEARCH_*` in `.env` from the created resources. Do not paste those values into source files.
 
-    - Add a toll-free phone number and ensure that the phone number has **calling and SMS capabilities enabled**. Copy the phone number value into a file for later use.
+### Create and populate Foundry IQ
 
-    - Create a connected email domain for your ACS resource:
-    
-        - Select `Connect your email domains` --> `Connect domain`. 
-        - Select your `Subscription` and `Resource group`. 
-        - Under the `Email Service` dropdown, select `Add an email service`.
-        - Give the email service a name such as `acs-demo-email-service`.
-        - Select `Review + create` followed by `Create`.
-        - Once the deployment completes, select `Go to resource`, and select `1-click add` to add a free Azure subdomain.
-        - After the subdomain is added (it'll take a few moments to be deployed), select it.
-        - Once you're on the `AzureManagedDomain` screen, select `MailFrom addresses` from the sidebar menu. Copy the `MailFrom` value to a file. You'll use it later as you update the `.env` file.
-        - Go back to your Azure Communication Services resource and select `Domains` from the left-hand menu.
-        - Select `Add domain` and enter the `MailFrom` value from the previous step (ensure you select the correct subscription, resource group, and email service). Select the `Connect` button.
+From `server/typescript`:
 
-    - Update the following keys/values in the `.env` file. For the **CUSTOMER_PHONE_NUMBER**, you'll need to provide a United States based phone number (as of today) due to additional verification that is required in other countries for SMS. If you don't have one, you can leave it empty. For the **CUSTOMER_EMAIL_ADDRESS**, provide an email address you'd like email to be sent to from the app (since the customer data in the app's database is only sample data).
+```bash
+npm install
+npm run setup:foundry-iq
+```
 
-        ```
-        ACS_CONNECTION_STRING=<ACS_CONNECTION_STRING>
-        ACS_PHONE_NUMBER=<ACS_PHONE_NUMBER>
-        ACS_EMAIL_ADDRESS=<ACS_EMAIL_ADDRESS>
-        CUSTOMER_EMAIL_ADDRESS=<EMAIL_ADDRESS_TO_SEND_EMAIL_TO>
-        CUSTOMER_PHONE_NUMBER=<UNITED_STATES_BASED_NUMBER_TO_SEND_SMS_TO>
-        ```
+The setup command is repeatable. It:
 
-        **NOTE**: You can get the ACS connection string from the Azure Portal by going to your ACS resource, selecting `Keys` from the left-hand menu, and copying the `connection string` value.
+1. Extracts the repository's DOCX and XLSX customer documents.
+2. Splits them into overlapping chunks.
+3. Generates 1,536-dimension vectors with `text-embedding-3-small`.
+4. Creates or updates the Search index.
+5. Uploads the chunks and vectors.
+6. Creates the Foundry IQ `searchIndex` knowledge source and knowledge base.
+7. Runs a live retrieval and verifies that Foundry IQ returns references.
 
-## Enable the Organizational Data Feature (Azure Active Directory and Microsoft Graph)
+The Free SKU is intended for a small proof of concept. It has limited storage, indexes, knowledge sources, knowledge bases, throughput, and no SLA. Model embedding and generation tokens are billed separately.
 
-1. Create a [Microsoft 365 Developer tenant](https://developer.microsoft.com/en-us/microsoft-365/dev-program) if you don't already have one. 
+## Configure Microsoft Graph
 
-1. Create a new Azure Active Directory (AAD) app registration using the [Azure Portal](https://portal.azure.com/#view/Microsoft_ENTRAID_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps).
+Create a single-page application registration in Microsoft Entra ID with `http://localhost:4200` as an SPA redirect URI. Put its application client ID in `ENTRAID_CLIENT_ID`.
 
-    - Give the app a name such as `microsoft-graph-app`.
-    - Select `Accounts in any organizational directory (Any Azure AD directory - Multitenant)`
-    - Redirect URI: Single-page application (SPA) with a redirect URL of http://localhost:4200
+Add these delegated Microsoft Graph permissions and grant tenant admin consent where required:
 
-1. After creating the app registration, go to the `Overview` screen and copy the `Application (client) ID` to your clipboard. Replace the <ENTRAID_CLIENT_ID> value in the `.env` file with the value.
+- `User.Read`
+- `Files.Read.All`
+- `Mail.Read`
+- `Calendars.Read`
+- `Chat.Read`
+- `ChannelMessage.Read.All`
+- `ChannelMessage.Send`
 
-        ```
-        ENTRAID_CLIENT_ID=<ENTRAID_CLIENT_ID>
-        ```
+`TEAM_ID` and `CHANNEL_ID` are optional. They enable posting a message to a configured Teams channel.
 
-1. To send a message from the app into a Teams Channel (optional feature that is included), open [Microsoft Teams](https://teams.microsoft.com) using your Microsoft 365 dev tenant account.
+The client uses direct Microsoft Graph API calls for files, mail, calendar events, Teams messages, and channel posting. Cached startup uses silent token acquisition; interactive authentication occurs only after the user selects **Sign in**.
 
-1. Expand a team and find a channel that you want to send messages to from the app.
+## Configure Azure Communication Services
 
-1. In the team header, click on the three dots (...) and select `Get link to team`.
+Configure an ACS resource with:
 
-1. In the link that appears in the popup window, the team ID is the string of letters and numbers after `team/`. For example, in the link "https://teams.microsoft.com/l/team/19%3ae9b9.../", the team ID is *19%3ae9b9...* up to the following `/` character. 
+- A phone number with outbound calling and inbound/outbound SMS
+- A connected email domain and sender address
+- The ACS connection string
 
-1. Copy the team ID and assign it to `TEAM_ID` in the *.env* file.
+Add those values to `ACS_CONNECTION_STRING`, `ACS_PHONE_NUMBER`, and `ACS_EMAIL_ADDRESS`. The optional `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` override the sample customer destinations for safe testing.
 
-1. In the channel header, click on the three dots (...) and select `Get link to channel`.
+The server waits for the real ACS email operation result and checks each SMS result. It does not return fabricated send success.
 
-1. In the link that appears in the popup window, the channel ID is the string of letters and numbers after `channel/`. For example, in the link "https://teams.microsoft.com/l/channel/19%3aQK02.../", the channel ID is *19%3aQK02...* up to the following `/` character.
+## Run the application
 
-1. Copy the channel ID and assign it to `CHANNEL_ID` in the *.env* file.
+Start PostgreSQL from the repository root:
 
-## Install App Dependencies and Start the App
+```bash
+docker compose up -d
+```
 
-1. In the following steps you'll create three terminal windows in Visual Studio code.
+If port `5432` is already in use, set `POSTGRES_PORT` in `.env` to another local port, such as `5435`; Docker Compose and the server use the same setting.
 
-1. Right-click in the Visual Studio Code file list and select **Open in Integrated Terminal**. 
+Start the server:
 
-1. Enter `docker-compose up` in the window and press <kbd>Enter</kbd> to start the Postgresql server.
+```bash
+cd server/typescript
+npm install
+npm test
+npm start
+```
 
-1. Press the **+** icon in the **Terminal toolbar** to create a 2nd terminal window. `cd` into the *server/typescript* folder and run the following commands to install the dependencies and start the API server.
+Start the client in another terminal:
 
-    - `npm install`
-    - `npm start`
+```bash
+cd client
+npm install
+npm start
+```
 
-1. Press the **+** icon in the **Terminal toolbar** to create a 3rd terminal window. `cd` into the *client* folder and run the following commands to install the dependencies and start the client application.
+Open `http://localhost:4200`.
 
-    - `npm install`
-    - `npm start` 
+## Verification
 
-1. Go to the browser and login using your Microsoft 365 Developer tenant account. 
+```bash
+cd server/typescript
+npm test
+npm run build
+npm audit
+npm run setup:foundry-iq
 
-    **NOTE**: You'll have to add files, Teams chats, emails, calendar events, etc. that use the company names shown in the app such as "Adatum Corporation", "Adventure Works Cycles", "Contoso Pharmaceuticals", "Tailwind Traders" manually to see them pulled into the app. You won't see any Microsoft 365 organizational data results at all when you load the app otherwise - aside from the app's customers. [View the full tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph) to learn more about doing this.
+cd ../../client
+npm run build
+npm audit --omit=dev
+```
+
+Live Microsoft Graph verification requires an interactive tenant sign-in. Email and SMS tests contact real recipients and should only be run with deliberate test destinations.
+
+## Foundry IQ and Work IQ
+
+Foundry IQ is the right knowledge system for the existing customer-document assistant because the data is owned and indexed by this application. Microsoft Graph remains the right deterministic API for the current user's files, mail, calendar, and Teams operations.
+
+Work IQ would add value only for a separate, permission-aware **customer meeting brief** that synthesizes recent email, Teams discussions, meetings, and documents for the selected customer. It is not required for document chat and should not replace the explicit Graph views or actions in this sample.
+
+That pilot is intentionally deferred because it requires tenant-wide Global Administrator enablement, a usage-based Copilot Studio billing plan, admin consent for the broad delegated `WorkIQAgent.Ask` permission, and a confidential server/OBO authentication flow. If enabled later, keep it feature-flagged and read-only: one **Generate Work IQ brief** action, no generic chat, no write tools, and no duplication of Foundry IQ data.

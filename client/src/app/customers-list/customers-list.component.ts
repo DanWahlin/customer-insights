@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { SorterService } from '@core/sorter.service';
 import { EventBusService, Events } from '@core/eventbus.service';
@@ -23,6 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
     selector: 'app-customers-list',
     templateUrl: './customers-list.component.html',
     styleUrls: ['./customers-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatIconModule, FilterTextboxComponent, MatButtonModule,
         MatMenuModule, FormsModule, TitleCaseUnderscorePipe, DynamicPipe]
 })

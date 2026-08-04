@@ -1,14 +1,8 @@
 import { Pool } from 'pg';
-import './config';
 import { QueryData } from './interfaces';
+import { databaseConfig } from './databaseConfig';
 
-const pool = new Pool({
-    user: process.env.POSTGRES_USER,
-    host: 'localhost',
-    database: 'CustomersDB',
-    password: process.env.POSTGRES_PASSWORD,
-    port: 5432,
-});
+const pool = new Pool(databaseConfig);
 
 async function getCustomers() {
     try {
@@ -26,8 +20,17 @@ async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: st
         return { error: 'Missing SQL command object.' };
     }
 
+    const withoutTrailingSemicolon = normalizeReadOnlyQuery(sqlCommandObject.sql);
+    if (!withoutTrailingSemicolon) {
+        return { error: 'Only a single SELECT query is allowed.' };
+    }
+
+    const client = await pool.connect();
     try {
-        const result = await pool.query(sqlCommandObject.sql, sqlCommandObject.paramValues);
+        await client.query('BEGIN TRANSACTION READ ONLY');
+        await client.query('SET LOCAL statement_timeout = 5000');
+        const result = await client.query(withoutTrailingSemicolon, sqlCommandObject.paramValues);
+        await client.query('COMMIT');
 
         // Check if the result has rows or an object literal, and handle accordingly
         if (!result.rows) {
@@ -45,9 +48,19 @@ async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: st
         return [];
     }
     catch (e) {
+        await client.query('ROLLBACK').catch(() => undefined);
         console.error('Error executing query:', e);
         return { error: 'Error executing query.' };
     }
+    finally {
+        client.release();
+    }
 }
 
-export { getCustomers, queryDb };
+function normalizeReadOnlyQuery(sql: string): string | null {
+    const normalized = sql.trim().replace(/;\s*$/, '');
+    if (!/^(select|with)\b/i.test(normalized) || normalized.includes(';')) return null;
+    return normalized;
+}
+
+export { getCustomers, normalizeReadOnlyQuery, queryDb };

@@ -1,70 +1,37 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RelatedContentBaseComponent } from '@shared/related-content-base.component';
-/* Based on the example found at:
-  https://github.com/microsoftgraph/microsoft-graph-toolkit/blob/main/samples/angular-app/src/app/angular-agenda/angular-agenda.component.ts
-*/
 
-type CalendarEvent = { isAllDay: boolean, start: { dateTime: Date }, end: { dateTime: Date } }
+type CalendarEvent = {
+  isAllDay?: boolean;
+  start?: { dateTime?: string | null };
+  end?: { dateTime?: string | null };
+};
 
 @Component({
   selector: 'app-calendar-events',
   templateUrl: './calendar-events.component.html',
   styleUrls: ['./calendar-events.component.scss'],
-  schemas: [ CUSTOM_ELEMENTS_SCHEMA ],
+  changeDetection: ChangeDetectionStrategy.Eager
 })
 export class CalendarEventsComponent extends RelatedContentBaseComponent {
-  // Could use the following to retrieve the files via code rather 
-  // than using <mgt-search-results> web component
-  // In the .html template you'd need to remove the "resource" property though from the bindings
   override async search(query: string) {
-    // this.data = await this.graphService.searchCalendarEvents(query);
+    this.data = await this.graphService.searchCalendarEvents(query);
   }
 
   dayFromDateTime(dateTimeString: string) {
-    const date = new Date(dateTimeString);
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-    ];
-
-    const monthIndex = date.getMonth();
-    const day = date.getDate();
-    const year = date.getFullYear();
-
-    return monthNames[monthIndex] + ' ' + day + ' ' + year;
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(this.parseUtcDateTime(dateTimeString));
   }
 
   timeRangeFromEvent(event: CalendarEvent) {
-    if (event.isAllDay) {
-      return 'ALL DAY';
-    }
+    if (event.isAllDay) return 'ALL DAY';
+    if (!event.start?.dateTime || !event.end?.dateTime) return '';
 
-    const prettyPrintTimeFromDateTime = (date: Date) => {
-      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-      let hours = date.getHours();
-      const minutes = date.getMinutes();
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-      const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-      return hours + ':' + minutesStr + ' ' + ampm;
-    };
-
-    const start = prettyPrintTimeFromDateTime(new Date(event.start.dateTime));
-    const end = prettyPrintTimeFromDateTime(new Date(event.end.dateTime));
-
-    return start + ' - ' + end;
+    const format = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+    return `${format.format(this.parseUtcDateTime(event.start.dateTime))} - ${format.format(this.parseUtcDateTime(event.end.dateTime))}`;
   }
 
+  private parseUtcDateTime(dateTimeString: string): Date {
+    const hasOffset = /(?:Z|[+-]\d{2}:\d{2})$/i.test(dateTimeString);
+    return new Date(hasOffset ? dateTimeString : `${dateTimeString}Z`);
+  }
 }

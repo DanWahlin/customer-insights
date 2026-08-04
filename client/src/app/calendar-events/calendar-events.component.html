@@ -1,79 +1,52 @@
 @if (this.data) {
-    <section>
-        <h2>Calendar Events</h2>
-        <div class="scroller">
-            
-            <mgt-search-results 
-                class="search-results" 
-                entity-types="event" 
-                [queryString]="searchText"
-                (dataChange)="dataChange($any($event))">
-                <template data-type="result-event"></template>
-            </mgt-search-results>
-
-            <!-- 
-            mgt-search-results provides the ability to define custom templates (see above).
-            However, the template binding syntax would need to be changed to avoid conflicts with
-            Angular bindings. Instead of using that, we're using the mgt-search-results component to retrieve
-            the data, handle the dataChange event, update a property named data in our component, and then render it 
-            using standard Angular bindings.
-            -->
-            @if (this.data.length) {
-                <div>
-                    @for (event of this.data;track $index) {
-                        <div class="root">
-                            <div class="time-container">
-                                <div class="date">{{ dayFromDateTime(event.resource.start.dateTime)}}</div>
-                                <div class="time">{{ timeRangeFromEvent(event.resource) }}</div>
-                            </div>
-
-                            <div class="separator">
-                                <div class="vertical-line top"></div>
-                                <div class="circle">
-                                    @if (!event.resource.bodyPreview?.includes('Join Microsoft Teams Meeting')) {
-                                        <div class="inner-circle"></div>
-                                    }
-                                </div>
-                                <div class="vertical-line bottom"></div>
-                            </div>
-
-                            <div class="details">
-                                <div class="subject">{{ event.resource.subject }}</div>
-                                @if (event.resource.location?.displayName) {
-                                    <div class="location">
-                                        at
-                                        <a href="https://bing.com/maps/default.aspx?where1={{event.resource.location.displayName}}"
-                                            target="_blank" rel="noopener"><b>{{ event.resource.location.displayName }}</b></a>
-                                    </div>
-                                }
-                                @if (event.resource.attendees?.length) {
-                                    <div class="attendees">
-                                        @for (attendee of event.resource.attendees;track attendee.emailAddress.name) {
-                                            <span class="attendee">
-                                                <mgt-person person-query="{{attendee.emailAddress.name}}"></mgt-person>
-                                            </span>
-                                        }
-                                    </div>
-                                }
-                                @if (event.resource.bodyPreview?.includes('Join Microsoft Teams Meeting')) {
-                                    <div class="online-meeting">
-                                        <img class="online-meeting-icon"
-                                            src="https://img.icons8.com/color/48/000000/microsoft-teams.png" title="Online Meeting" />
-                                        <a class="online-meeting-link" href="{{ event.resource.onlineMeetingUrl }}">
-                                            Join Teams Meeting
-                                        </a>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
+  <section>
+    <h2>Calendar Events</h2>
+    <div class="scroller">
+      @for (event of this.data; track event.id ?? $index) {
+        <div class="root">
+          <div class="time-container">
+            @if (event.start?.dateTime) {
+              <div class="date">{{ dayFromDateTime(event.start.dateTime) }}</div>
             }
-            @if (!this.data) {
-                <div>
-                    No events found
-                </div>
+            <div class="time">{{ timeRangeFromEvent(event) }}</div>
+          </div>
+
+          <div class="separator">
+            <div class="vertical-line top"></div>
+            <div class="circle">
+              @if (!event.isOnlineMeeting) {
+                <div class="inner-circle"></div>
+              }
+            </div>
+            <div class="vertical-line bottom"></div>
+          </div>
+
+          <div class="details">
+            <div class="subject">{{ event.subject }}</div>
+            @if (event.location?.displayName) {
+              <div class="location">
+                at <a [href]="'https://bing.com/maps/default.aspx?where1=' + event.location.displayName" target="_blank" rel="noopener"><b>{{ event.location.displayName }}</b></a>
+              </div>
             }
+            @if (event.attendees?.length) {
+              <div class="attendees">
+                @for (attendee of event.attendees; track attendee.emailAddress?.address ?? $index) {
+                  <span class="attendee">{{ attendee.emailAddress?.name ?? attendee.emailAddress?.address }}</span>
+                }
+              </div>
+            }
+            @if (event.onlineMeeting?.joinUrl) {
+              <div class="online-meeting">
+                <img class="online-meeting-icon" src="https://img.icons8.com/color/48/000000/microsoft-teams.png" alt="Microsoft Teams" />
+                <a class="online-meeting-link" [href]="event.onlineMeeting.joinUrl" target="_blank" rel="noopener">Join Teams Meeting</a>
+              </div>
+            }
+          </div>
         </div>
-    </section>
+      }
+      @if (!this.data.length) {
+        <h3>No events found</h3>
+      }
+    </div>
+  </section>
 }

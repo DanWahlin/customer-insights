@@ -6,109 +6,62 @@ import './config';
 const connectionString = process.env.ACS_CONNECTION_STRING as string;
 
 async function createACSToken() {
-  if (!connectionString) return { userId: '', token: '' };
+  if (!connectionString) throw new Error('ACS_CONNECTION_STRING is not configured.');
 
   const tokenClient = new CommunicationIdentityClient(connectionString);
-  const { user, token } = await tokenClient.createUserAndToken(["voip"]);
-  return { userId: user.communicationUserId, token };
+  const { user, token } = await tokenClient.createUserAndToken(['voip']);
+  return {
+    userId: user.communicationUserId,
+    token
+  };
 }
 
-async function sendEmail(subject: string, message: string,
-  customerName: string, customerEmailAddress: string): Promise<{ status: boolean, id: string }> {
-  if (!connectionString) return { status: false, id: '' };
+async function sendEmail(
+  subject: string,
+  message: string,
+  customerName: string,
+  customerEmailAddress: string
+): Promise<{ status: boolean; id: string }> {
+  if (!connectionString) throw new Error('ACS_CONNECTION_STRING is not configured.');
+  const senderAddress = process.env.ACS_EMAIL_ADDRESS;
+  if (!senderAddress) throw new Error('ACS_EMAIL_ADDRESS is not configured.');
 
   const emailClient = new EmailClient(connectionString);
-  try {
-    const msgObject: EmailMessage = {
-      senderAddress: process.env.ACS_EMAIL_ADDRESS as string,
-      content: {
-        subject: subject,
-        plainText: message,
-      },
-      recipients: {
-        to: [
-          {
-            address: customerEmailAddress,
-            displayName: customerName,
-          },
-        ],
-      },
-    };
+  const email: EmailMessage = {
+    senderAddress,
+    content: {
+      subject,
+      plainText: message
+    },
+    recipients: {
+      to: [{ address: customerEmailAddress, displayName: customerName }]
+    }
+  };
 
-    const poller = await emailClient.beginSend(msgObject);
-
-    /**
-     **  Returning a promise that resolves immediately since we're not using the send Id.
-    **/
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ status: true, id: '123' });
-      }, 500);
-    });
-
-    /**
-     **  Uncomment the following line and comment out the return statement above 
-     **  if you want to wait until the email send operation is officially completed.
-     **  This will take longer, but will allow you to get an Id for the send operation.
-    **/
-    // return pollEmailSend(poller);
+  const poller = await emailClient.beginSend(email);
+  const result = await poller.pollUntilDone();
+  if (result.status !== KnownEmailSendStatus.Succeeded) {
+    throw new Error(result.error?.message ?? `Email send failed with status ${result.status}.`);
   }
-  catch (e: unknown) {
-    console.log(e);
-    return { status: false, id: '' };
-  }
+  return { status: true, id: result.id };
 }
 
 async function sendSms(message: string, customerPhoneNumber: string): Promise<SmsSendResult[]> {
+  if (!connectionString) throw new Error('ACS_CONNECTION_STRING is not configured.');
+  const sender = process.env.ACS_PHONE_NUMBER;
+  if (!sender) throw new Error('ACS_PHONE_NUMBER is not configured.');
+
   const smsClient = new SmsClient(connectionString);
-
-  try {
-    const sendResults = await smsClient.send({
-      from: process.env.ACS_PHONE_NUMBER as string,
-      to: [customerPhoneNumber],
-      message
-    });
-    console.log('SMS message sent successfully', sendResults);
-    return sendResults;
+  const results = await smsClient.send({
+    from: sender,
+    to: [customerPhoneNumber],
+    message
+  });
+  const failed = results.filter(result => !result.successful);
+  if (failed.length) {
+    throw new Error(failed.map(result => result.errorMessage ?? 'SMS send failed.').join(' '));
   }
-  catch (e: unknown) {
-    console.log(e);
-    return [];
-  }
-}
-
-async function pollEmailSend(poller: any) : Promise<{ status: boolean, id: string }> {
-    const waitTime = 10;
-    if (!poller.getOperationState().isStarted) {
-      throw "Poller was not started."
-    }
-
-    let timeElapsed = 0;
-    while (!poller.isDone()) {
-      poller.poll();
-      console.log("Email send polling in progress");
-
-      await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
-      timeElapsed += 10;
-
-      if (timeElapsed > 18 * waitTime) {
-        throw "Polling timed out.";
-      }
-    }
-
-    const result = poller.getResult();
-    if (result) {
-      if (result.status === KnownEmailSendStatus.Succeeded) {
-        console.log(`Successfully sent the email (operation id: ${result.id})`);
-        return { status: true, id: result.id };
-      }
-      else {
-        throw result.error;
-      }
-    }
-    else {
-      throw "Result was null.";
-    }
+  return results;
 }
 
 export { createACSToken, sendEmail, sendSms };

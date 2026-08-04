@@ -1,26 +1,42 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { DataService } from '@core/data.service';
+import { FoundryIQAnswer } from '@shared/interfaces';
 
 @Component({
-    selector: 'app-chat-help-dialog',
-    templateUrl: './chat-help-dialog.component.html',
-    styleUrls: ['./chat-help-dialog.component.scss'],
-    imports: [CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatIconModule]
+  selector: 'app-chat-help-dialog',
+  templateUrl: './chat-help-dialog.component.html',
+  styleUrls: ['./chat-help-dialog.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [FormsModule, MatButtonModule, MatDialogModule, MatIconModule]
 })
 export class ChatHelpDialogComponent {
-  prompt = 'How should I handle a company refund request?';
-  placeholder = 'How should I handle a company refund request?';
-  response = '';
-  dataService = inject(DataService)
+  prompt = 'What supplies are associated with Adventure Works Cycles?';
+  placeholder = 'Ask a question about the indexed customer documents';
+  result: FoundryIQAnswer | null = null;
+  error = '';
+  loading = false;
+  dataService = inject(DataService);
 
   getHelp() {
-    this.dataService.completeBYOD(this.prompt).subscribe((response: string) => {
-      this.response = response;
+    const question = this.prompt.trim();
+    if (!question || this.loading) return;
+
+    this.loading = true;
+    this.error = '';
+    this.result = null;
+    this.dataService.askFoundryIQ(question).subscribe({
+      next: result => {
+        this.result = result;
+        this.loading = false;
+      },
+      error: error => {
+        this.error = error?.error?.error ?? error?.message ?? 'Foundry IQ could not answer the question.';
+        this.loading = false;
+      }
     });
   }
 }

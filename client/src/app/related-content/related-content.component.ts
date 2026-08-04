@@ -1,4 +1,4 @@
-import { Component, Input, NO_ERRORS_SCHEMA } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconRegistry, MatIconModule } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Customer } from '@shared/interfaces';
@@ -26,7 +26,7 @@ type ContentCountType = keyof ContentCounts;
     styleUrls: ['./related-content.component.scss'],
     imports: [MatCardModule, MatIconModule, FilterTextboxComponent, MatTabsModule,
         MatBadgeModule, FilesComponent, ChatsComponent, EmailsComponent, CalendarEventsComponent],
-    schemas: [NO_ERRORS_SCHEMA]
+    changeDetection: ChangeDetectionStrategy.Eager
 })
 export class RelatedContentComponent {
 

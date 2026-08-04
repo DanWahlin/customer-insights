@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
     template: `
         {{ label }} <input type="text" [(ngModel)]="filter" style="width: 250px" />
     `,
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [FormsModule]
 })
 export class FilterTextboxComponent {

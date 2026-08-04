@@ -1,22 +1,17 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core';
-import { RelatedContentBaseComponent } from '@shared/related-content-base.component';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { RelatedContentBaseComponent } from '@shared/related-content-base.component';
 
 @Component({
-    selector: 'app-emails',
-    templateUrl: './emails.component.html',
-    styleUrls: ['./emails.component.scss'],
-    imports: [MatCardModule, MatButtonModule],
-    schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  selector: 'app-emails',
+  templateUrl: './emails.component.html',
+  styleUrls: ['./emails.component.scss'],
+  imports: [MatCardModule, MatButtonModule],
+  changeDetection: ChangeDetectionStrategy.Eager
 })
 export class EmailsComponent extends RelatedContentBaseComponent {
-
-  // Could use the following to retrieve the files via code rather 
-  // than using <mgt-search-results> web component
   override async search(query: string) {
-    // this.data = await this.graphService.searchEmailMessages(query);
+    this.data = await this.graphService.searchEmailMessages(query);
   }
-  
 }
-

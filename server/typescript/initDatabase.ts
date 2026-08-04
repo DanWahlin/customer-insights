@@ -1,13 +1,7 @@
 import { Pool } from 'pg';
-import './config';
+import { databaseConfig } from './databaseConfig';
 
-const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: 'localhost',
-  database: 'CustomersDB',
-  password: process.env.POSTGRES_PASSWORD,
-  port: 5432,
-});
+const pool = new Pool(databaseConfig);
 
 async function checkTables() {
   const query = `SELECT table_name
@@ -116,7 +110,7 @@ async function seedData() {
 }
 
 export async function initializeDb() {
-  await pool.connect();
+  await pool.query('SELECT 1');
   console.log('Connected to database...');
 
   const tablesExist = await checkTables();

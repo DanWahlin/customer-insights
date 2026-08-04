@@ -1,19 +1,19 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RelatedContentBaseComponent } from '@shared/related-content-base.component';
 
 @Component({
-    selector: 'app-files',
-    templateUrl: './files.component.html',
-    styleUrls: ['./files.component.scss'],
-    standalone: true,
-    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  selector: 'app-files',
+  templateUrl: './files.component.html',
+  styleUrls: ['./files.component.scss'],
+  standalone: true,
+  imports: [MatCardModule, MatButtonModule, DatePipe],
+  changeDetection: ChangeDetectionStrategy.Eager
 })
 export class FilesComponent extends RelatedContentBaseComponent {
-
-  // Could use the following to retrieve the files via code rather 
-  // than using <mgt-search-results> web component
   override async search(query: string) {
-    // this.data = await this.graphService.searchFiles(query);
+    this.data = await this.graphService.searchFiles(query);
   }
-
 }

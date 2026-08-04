@@ -1,9 +1,28 @@
 textarea {
-    height: 100px;
-    width: 40vw;
-    font-size: 1.2em;
+  box-sizing: border-box;
+  min-height: 110px;
+  width: min(620px, 70vw);
+  padding: 12px;
+  font: inherit;
+  resize: vertical;
 }
 
 .response {
-    width: 40vw;
+  width: min(620px, 70vw);
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-left: 4px solid #3f51b5;
+  background: #f5f7ff;
+}
+
+.response h3 {
+  margin: 8px 0;
+}
+
+.status {
+  color: #3f51b5;
+}
+
+.error {
+  color: #b00020;
 }

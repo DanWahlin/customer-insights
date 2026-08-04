@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CallClient, CallAgent, Call } from "@azure/communication-calling";
 import { AzureCommunicationTokenCredential } from '@azure/communication-common';
 import { Subscription } from 'rxjs';
@@ -13,6 +13,7 @@ import { environment } from '../../environments/environment';
     selector: 'app-phone-call',
     templateUrl: './phone-call.component.html',
     styleUrls: ['./phone-call.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [FormsModule, MatButtonModule, MatIconModule]
 })
 export class PhoneCallComponent implements OnInit, OnDestroy {

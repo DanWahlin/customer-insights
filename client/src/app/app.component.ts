@@ -1,4 +1,4 @@
-import { ApplicationRef, Component, ComponentRef, EnvironmentInjector, OnDestroy, OnInit, createComponent, inject } from '@angular/core';
+import { ApplicationRef, Component, ComponentRef, EnvironmentInjector, OnDestroy, OnInit, createComponent, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FeatureFlagsService } from '@core/feature-flags.service';
@@ -15,6 +15,7 @@ import { HeaderComponent } from './header/header.component';
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [HeaderComponent, CustomersListComponent, OverlayComponent, RouterOutlet]
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -53,7 +54,10 @@ export class AppComponent implements OnInit, OnDestroy {
     for (const item of this.iconList) {
       this.iconRegistry.addSvgIconLiteral(item.name, this.sanitizer.bypassSecurityTrustHtml(item.icon));
     }
-    this.graphService.init();
+    const user = await this.graphService.init();
+    if (user?.displayName) {
+      this.name = user.displayName;
+    }
 
     // Update the signInMessage property after 800ms
     // Option 1: of('Please sign in to continue').pipe(delay(800)).subscribe((msg: string) => this.signInMessage = msg);
@@ -79,8 +83,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.relatedContentComponentRef.setInput('selectedCustomer', this.selectedCustomer);
   }
 
-  userLoggedIn(user: { displayName: string}) {
-    this.name = user.displayName;
+  userLoggedIn(user: { displayName?: string | null }) {
+    this.name = user.displayName ?? '';
   }
 
   ngOnDestroy() {

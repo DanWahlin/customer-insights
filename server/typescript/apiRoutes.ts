@@ -3,16 +3,22 @@ import './config';
 
 import { createACSToken, sendEmail, sendSms } from './acs';
 import { initializeDb } from './initDatabase';
-import { completeBYOD, completeEmailSMSMessages, getSQLFromNLP } from './openAI';
+import { completeEmailSMSMessages, getSQLFromNLP } from './openAI';
+import { answerWithFoundryIQ } from './foundryIQ';
 import { getCustomers, queryDb } from './postgres';
 
 const router = Router();
 
 initializeDb().catch(err => console.error(err));
 
-router.get('/acstoken', async (req, res) => {
-    const token = await createACSToken();
-    res.json(token);
+router.get('/acstoken', async (_req, res) => {
+    try {
+        res.json(await createACSToken());
+    }
+    catch (error) {
+        console.error('ACS token creation failed:', error);
+        res.status(500).json({ error: 'ACS token creation failed.' });
+    }
 });
 
 router.get('/customers', async (req, res) => {
@@ -71,7 +77,6 @@ router.post('/sendEmail', async (req: Request, res: Response): Promise<void> => 
 
     try {
         const sendResults = await sendEmail(subject, message, customerName, customerEmailAddress);
-        console.log(sendResults);
         res.json({
             status: sendResults.status,
             messageId: sendResults.id
@@ -99,10 +104,11 @@ router.post('/sendSms', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        const sendResults = await sendSms(message, customerPhoneNumber);
+        const [sendResult] = await sendSms(message, customerPhoneNumber);
+        if (!sendResult) throw new Error('ACS returned no SMS send result.');
         res.json({
-            status: sendResults[0].successful,
-            messageId: sendResults[0].messageId
+            status: sendResult.successful,
+            messageId: sendResult.messageId
         });
     }
     catch (e: unknown) {
@@ -137,27 +143,25 @@ router.post('/completeEmailSmsMessages', async (req: Request, res: Response): Pr
     res.json(result);
 });
 
-router.post('/completeBYOD', async (req: Request, res: Response): Promise<void> => {
+router.post('/foundryIq', async (req: Request, res: Response): Promise<void> => {
     const { prompt } = req.body;
 
-    if (!prompt) {
-        res.status(400).json({ 
-            status: false, 
-            error: 'The prompt parameter must be provided.' 
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000) {
+        res.status(400).json({
+            error: 'The prompt must be a nonempty string of at most 4,000 characters.'
         });
         return;
     }
 
-    let result;
     try {
-        // Call OpenAI to get custom "bring your own data" completion
-       result = await completeBYOD(prompt);
+        res.json(await answerWithFoundryIQ(prompt));
     }
-    catch (e: unknown) {
-        console.error('Error parsing JSON:', e);
+    catch (error: unknown) {
+        console.error('Foundry IQ request failed:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Foundry IQ request failed.'
+        });
     }
-
-    res.json(result);
 });
 
 export default router;
