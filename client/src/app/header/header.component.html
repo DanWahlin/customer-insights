@@ -7,34 +7,37 @@
       <app-phone-call [customerPhoneNumber]="callData.phone!" (hangup)="hangup()"></app-phone-call>
     }
   }
-  @if (this.featureFlags.microsoft365Enabled) {
-    @if (this.graphService.isSignedIn()) {
-      <button mat-button type="button" class="account-button" [matMenuTriggerFor]="accountMenu"
-              aria-label="Open Microsoft 365 account menu">
-        <span class="account-avatar" aria-hidden="true">{{ accountInitials() }}</span>
-        <span class="account-button-name">{{ accountName() }}</span>
-        <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
-      </button>
-      <mat-menu #accountMenu="matMenu" xPosition="before" class="account-menu">
-        <div class="account-summary" role="presentation" (click)="$event.stopPropagation()">
-          <span class="account-avatar account-avatar-large" aria-hidden="true">{{ accountInitials() }}</span>
-          <div class="account-details">
-            <strong>{{ accountName() }}</strong>
-            @if (accountEmail()) {
-              <span>{{ accountEmail() }}</span>
-            }
-          </div>
-        </div>
-        <button mat-menu-item type="button" (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>Sign out</span>
+  <span class="header-actions">
+    @if (this.featureFlags.microsoft365Enabled) {
+      @if (this.graphService.isSignedIn()) {
+        <button mat-icon-button type="button" class="account-button" [matMenuTriggerFor]="accountMenu"
+                [attr.aria-label]="'Open Microsoft 365 account menu for ' + accountName()">
+          <span class="account-avatar" aria-hidden="true">{{ accountInitials() }}</span>
         </button>
-      </mat-menu>
-    } @else {
-      <button mat-button type="button" (click)="login()">Sign in</button>
+        <mat-menu #accountMenu="matMenu" xPosition="before" class="account-menu">
+          <div class="account-summary" role="presentation" (click)="$event.stopPropagation()">
+            <span class="account-avatar account-avatar-large" aria-hidden="true">{{ accountInitials() }}</span>
+            <div class="account-details">
+              <strong>{{ accountName() }}</strong>
+              @if (accountEmail()) {
+                <span>{{ accountEmail() }}</span>
+              }
+            </div>
+          </div>
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Sign out</span>
+          </button>
+        </mat-menu>
+      } @else {
+        <button mat-button type="button" (click)="login()">Sign in</button>
+      }
     }
-  }
-  @if (this.featureFlags.foundryIQEnabled) {
-    <mat-icon class="chat-help-icon" (click)="openChatHelp()">chat</mat-icon>
-  }
+    @if (this.featureFlags.foundryIQEnabled) {
+      <button mat-icon-button type="button" class="chat-help-button" aria-label="Open document assistant"
+              (click)="openChatHelp()">
+        <mat-icon aria-hidden="true">chat</mat-icon>
+      </button>
+    }
+  </span>
 </mat-toolbar>

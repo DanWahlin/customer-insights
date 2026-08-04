@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -7,6 +7,7 @@ import { map, catchError } from 'rxjs/operators';
 import { Customer, FoundryIQAnswer } from '@shared/interfaces';
 import { EmailSmsCompletion } from '@shared/interfaces';
 import { ApiUrlService } from './api-url.service';
+import { SKIP_GLOBAL_OVERLAY } from './overlay/overlay-http-context';
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -57,7 +58,8 @@ export class DataService {
   }
 
   askFoundryIQ(prompt: string): Observable<FoundryIQAnswer> {
-    return this.http.post<FoundryIQAnswer>(this.apiUrl + 'foundryIq', { prompt })
+    const context = new HttpContext().set(SKIP_GLOBAL_OVERLAY, true);
+    return this.http.post<FoundryIQAnswer>(this.apiUrl + 'foundryIq', { prompt }, { context })
       .pipe(
         catchError(this.handleError)
       );

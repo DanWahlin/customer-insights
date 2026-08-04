@@ -20,6 +20,10 @@ textarea {
 }
 
 .status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
   color: #3f51b5;
 }
 

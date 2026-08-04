@@ -6,6 +6,7 @@ import { Observable, of, /* delay */ } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 
 import { EventBusService, EmitEvent, Events } from '../eventbus.service';
+import { SKIP_GLOBAL_OVERLAY } from './overlay-http-context';
 
 @Injectable({ providedIn: 'root'})
 export class OverlayRequestResponseInterceptor implements HttpInterceptor {
@@ -13,6 +14,10 @@ export class OverlayRequestResponseInterceptor implements HttpInterceptor {
   eventBus = inject(EventBusService);
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (req.context.get(SKIP_GLOBAL_OVERLAY)) {
+      return next.handle(req);
+    }
+
     // const randomTime = this.getRandomIntInclusive(0, 1500);
     // const started = Date.now();
     this.eventBus.emit(new EmitEvent(Events.HttpRequest));

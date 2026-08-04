@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DataService } from '@core/data.service';
 import { FoundryIQAnswer } from '@shared/interfaces';
 
@@ -11,7 +12,7 @@ import { FoundryIQAnswer } from '@shared/interfaces';
   templateUrl: './chat-help-dialog.component.html',
   styleUrls: ['./chat-help-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [FormsModule, MatButtonModule, MatDialogModule, MatIconModule]
+  imports: [FormsModule, MatButtonModule, MatDialogModule, MatIconModule, MatProgressSpinnerModule]
 })
 export class ChatHelpDialogComponent {
   prompt = 'What supplies are associated with Adventure Works Cycles?';

@@ -9,7 +9,10 @@
   <textarea [(ngModel)]="prompt" title="Question" [placeholder]="placeholder"></textarea>
 
   @if (loading) {
-    <p class="status">Searching the knowledge base and grounding an answer…</p>
+    <div class="status" role="status" aria-live="polite">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Searching the knowledge base and grounding an answer…</span>
+    </div>
   }
   @if (error) {
     <p class="error" role="alert">{{ error }}</p>
