@@ -9,6 +9,11 @@ export class ApiUrlService {
     getApiUrl() {
         if (this.apiUrl) return this.apiUrl;
 
+        if (environment.apiUrl) {
+          this.apiUrl = `${environment.apiUrl.replace(/\/$/, '')}/api/`;
+          return this.apiUrl;
+        }
+
         const codespacesUrlSuffix = 'preview.app.github.dev';
         let url = `${window.location.protocol}//${window.location.hostname}`;
         const appPort = 4200;
