@@ -12,10 +12,17 @@
                     <br />
                     <textarea type="text" [(ngModel)]="prompt" title="Message" [placeholder]="placeholder"></textarea>
                     <div mat-dialog-actions align="end">
-                        <button mat-stroked-button cdkFocusInitial (click)="generateEmailSmsMessages()">
-                            Generate Email/SMS Messages
+                        <button mat-stroked-button cdkFocusInitial (click)="generateEmailSmsMessages()"
+                                [disabled]="!prompt.trim() || loading">
+                            {{ loading ? 'Working…' : 'Generate Email/SMS Messages' }}
                         </button>
                     </div>
+                    @if (loading) {
+                        <div class="generation-status" role="status" aria-live="polite">
+                            <mat-spinner diameter="28"></mat-spinner>
+                            <span>Generating email and SMS drafts…</span>
+                        </div>
+                    }
                     @if (this.error) {
                         <div class="error-message">{{ error }}</div>
                     }

@@ -33,6 +33,13 @@ textarea {
     font-size: 1.2em;
 }
 
+.generation-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #3f51b5;
+}
+
 .tab-group {
     height: 550px;
     width: 60vw;

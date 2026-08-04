@@ -9,6 +9,8 @@ import { EmailSmsDialogData } from './email-sms-dialog-data';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs/operators';
 
 
 @Component({
@@ -16,7 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
     templateUrl: './email-sms-dialog.component.html',
     styleUrls: ['./email-sms-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [MatDialogModule, MatIconModule, MatTabsModule, FormsModule, MatButtonModule]
+    imports: [MatDialogModule, MatIconModule, MatTabsModule, FormsModule, MatButtonModule, MatProgressSpinnerModule]
 })
 export class EmailSmsDialogComponent implements OnInit, OnDestroy {
   title = '';
@@ -28,6 +30,7 @@ export class EmailSmsDialogComponent implements OnInit, OnDestroy {
   smsMessage = '';
   emailSent = false;
   smsSent = false;
+  loading = false;
   placeholder = `Example: 
 Order is delayed 2 days. 
 5% discount off order. 
@@ -53,20 +56,29 @@ We're sorry.`
     return customerName;
   }
 
-  async generateEmailSmsMessages() {
+  generateEmailSmsMessages() {
+    if (!this.prompt.trim() || this.loading) return;
+
     this.error = '';
+    this.loading = true;
     
     this.subscription.add(
       this.dataService.completeEmailSmsMessages(this.prompt, this.data.company, this.getFirstName(this.data.customerName))
-        .subscribe((data) => {
-          if (data.status) {
-            this.emailSubject = data.emailSubject;
-            this.emailBody = data.emailBody;
-            this.smsMessage = data.sms;
-            this.tabGroup.selectedIndex = 1;
-          }
-          else {
-            this.error = data.error;
+        .pipe(finalize(() => this.loading = false))
+        .subscribe({
+          next: data => {
+            if (data.status) {
+              this.emailSubject = data.emailSubject;
+              this.emailBody = data.emailBody;
+              this.smsMessage = data.sms;
+              this.tabGroup.selectedIndex = 1;
+            }
+            else {
+              this.error = data.error;
+            }
+          },
+          error: error => {
+            this.error = error?.error?.error ?? error?.message ?? 'AI message generation failed.';
           }
         })
     );

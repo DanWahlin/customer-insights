@@ -66,7 +66,12 @@ export class DataService {
   }
 
   completeEmailSmsMessages(prompt: string, company: string, contactName: string): Observable<EmailSmsCompletion> {
-    return this.http.post<EmailSmsCompletion>(this.apiUrl + 'completeEmailSmsMessages', { prompt, company, contactName })
+    const context = new HttpContext().set(SKIP_GLOBAL_OVERLAY, true);
+    return this.http.post<EmailSmsCompletion>(
+      this.apiUrl + 'completeEmailSmsMessages',
+      { prompt, company, contactName },
+      { context }
+    )
       .pipe(
         catchError(this.handleError)
       );
