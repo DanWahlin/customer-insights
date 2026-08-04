@@ -84,7 +84,8 @@ export async function answerWithFoundryIQ(query: string): Promise<FoundryIQAnswe
       'Keep the answer concise and useful to a customer-service employee.'
     ].join(' '),
     input: `Question:\n${query.trim()}\n\nSources:\n${groundedContext}`,
-    max_output_tokens: 800
+    reasoning: { effort: 'low' },
+    max_output_tokens: 2000
   });
   if (response.status !== 'completed') throw new Error('The grounded model response was incomplete.');
 

@@ -3,7 +3,9 @@
   <span class="title">Customers App</span>
   <span class="spacer"></span>
   @defer (when callVisible) {
-    <app-phone-call [customerPhoneNumber]="callData.phone!" (hangup)="hangup()"></app-phone-call>
+    @if (callVisible) {
+      <app-phone-call [customerPhoneNumber]="callData.phone!" (hangup)="hangup()"></app-phone-call>
+    }
   }
   @if (this.featureFlags.microsoft365Enabled) {
     @if (this.graphService.isSignedIn()) {
