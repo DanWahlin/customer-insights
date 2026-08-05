@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Request, Response } from 'express';
 
-import { hasRequiredScope, requireAccessAsUser, requireBearerHeader } from '../entraAuth';
+import { handleAuthenticationError, hasRequiredScope, requireAccessAsUser, requireBearerHeader } from '../entraAuth';
 
 function createResponse() {
   let statusCode = 200;
@@ -89,4 +89,27 @@ test('requireBearerHeader rejects missing and alternate token transports', () =>
     assert.deepEqual(result.body, { error: 'A valid Microsoft Entra access token is required.' });
     assert.equal(nextCalled, false);
   }
+});
+
+test('handleAuthenticationError normalizes configured claim mismatches to 401', () => {
+  for (const claim of ['tid', 'azp']) {
+    let nextCalled = false;
+    const result = createResponse();
+    handleAuthenticationError(
+      new Error(`Unexpected '${claim}' value`),
+      {} as Request,
+      result.response,
+      () => { nextCalled = true; }
+    );
+    assert.equal(result.statusCode, 401);
+    assert.deepEqual(result.body, { error: 'A valid Microsoft Entra access token is required.' });
+    assert.equal(nextCalled, false);
+  }
+});
+
+test('handleAuthenticationError passes unrelated server failures through', () => {
+  const failure = new Error('database unavailable');
+  let nextError: unknown;
+  handleAuthenticationError(failure, {} as Request, createResponse().response, error => { nextError = error; });
+  assert.equal(nextError, failure);
 });
