@@ -1,6 +1,6 @@
 # Customer Insights with Microsoft Graph, Foundry IQ, and ACS
 
-This sample combines customer data with Microsoft 365 context, grounded document answers, generative AI, and customer communications. The Angular client, Express API, and PostgreSQL database run locally. Azure supplies the AI, search, and communication capabilities.
+This sample combines customer data with Microsoft 365 context, grounded document answers, generative AI, and customer communications. The web client, API, and PostgreSQL database can be run locally. Azure supplies the AI, search, and communication capabilities.
 
 The sample began as a Microsoft Learn tutorial and has since been modernized:
 
