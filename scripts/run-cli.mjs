@@ -31,6 +31,10 @@ export function runCli(command, args, options = {}) {
     stdio: options.stdio ?? 'pipe'
   });
 
+  if (result.error) {
+    throw new Error(`Unable to start ${command}: ${result.error.message}`);
+  }
+
   if (result.status !== 0) {
     const detail = options.redactOutput ? '' : `\n${(result.stderr || result.stdout || '').trim()}`;
     throw new Error(`${command} exited with code ${result.status}.${detail}`);

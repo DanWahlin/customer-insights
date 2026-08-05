@@ -2,7 +2,7 @@
 
 This sample combines customer data with Microsoft 365 context, grounded document answers, generative AI, and customer communications. The Angular client, Express API, and PostgreSQL database run locally. Azure supplies the AI, search, and communication capabilities.
 
-The sample is based on the [original Microsoft Learn tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph), but its implementation has been modernized:
+The sample began as a Microsoft Learn tutorial and has since been modernized:
 
 - Angular 22 and Express 5
 - Direct MSAL Browser and Microsoft Graph Client calls instead of the deprecated Microsoft Graph Toolkit
@@ -60,6 +60,8 @@ These tools are needed only when provisioning or updating Foundry and Search:
 
 The `azd` project does **not** deploy Angular, Express, PostgreSQL, Entra ID, or Azure Communication Services. Those remain local or separately managed.
 
+The deployment path was validated with Azure CLI 2.88, Azure Developer CLI 1.28, and Bicep CLI 0.46.1. Newer compatible versions are appropriate. Model versions and Global Standard quota must also be available in the selected region and subscription.
+
 ## Configure the environment
 
 Copy the template from the repository root:
@@ -112,7 +114,7 @@ azd provision --preview
 azd up
 ```
 
-`prepare-azd-env.mjs` creates deterministic, globally unique AI and Search names. You can override any generated value before `azd up`:
+`prepare-azd-env.mjs` creates deterministic, collision-resistant AI and Search names. You can override any generated value before `azd up`:
 
 ```bash
 azd env set AZURE_RESOURCE_GROUP <dedicated-resource-group>
@@ -126,26 +128,33 @@ azd env set AZURE_AI_SEARCH_SERVICE_NAME <globally-unique-search-name>
 Verify the resulting names with `azd env get-values`, then inspect the resources:
 
 ```bash
-az cognitiveservices account deployment list --resource-group <resource-group> --name <ai-account> --output table
-az cognitiveservices account project show --resource-group <resource-group> --name <ai-account> --project-name <project-name>
-az search service show --resource-group <resource-group> --name <search-service>
+az cognitiveservices account deployment list --subscription <subscription-id> --resource-group <resource-group> --name <ai-account> --output table
+az cognitiveservices account project show --subscription <subscription-id> --resource-group <resource-group> --name <ai-account> --project-name <project-name>
+az search service show --subscription <subscription-id> --resource-group <resource-group> --name <search-service>
 ```
 
 Both model deployments and the project must report `Succeeded`; Search must report `running` with SKU `free`.
 
 ### Adopt the existing talk resources
 
-Set the exact existing resource group and resource names before running the preview. Do this only for resources dedicated to this sample:
+Create or select a separate azd environment, then set the exact subscription, location, resource group, and resource names. Do this only for resources dedicated to this sample:
 
 ```bash
+azd env new talk-existing
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_RESOURCE_GROUP <existing-resource-group>
+azd env set AZURE_LOCATION <existing-resource-location>
 azd env set AI_ACCOUNT_NAME <existing-ai-account>
 azd env set AI_PROJECT_NAME <existing-project>
 azd env set AZURE_AI_SEARCH_SERVICE_NAME <existing-search-service>
 azd provision --preview
+azd provision
+node scripts/configure-local-env.mjs
 ```
 
-Review the preview before applying it. Never point this template at an unrelated resource group.
+All adopted resources must be in the configured location. The template also manages the resource-group, AI-account, and Search tags. Review the preview before applying it.
+
+**Do not use `azd down` on an environment that adopts live talk resources.** It deletes the entire adopted resource group and purges the AI account. Never point this template at an unrelated or shared resource group.
 
 ### Copy provisioned settings into `.env`
 
@@ -155,7 +164,7 @@ After `azd up` or `azd provision` succeeds:
 node scripts/configure-local-env.mjs
 ```
 
-The script retrieves the AI and Search keys through Azure CLI, updates only the related entries in the ignored root `.env`, enforces file mode `0600`, and does not print secret values.
+The script retrieves the AI and Search keys from the subscription selected by azd, updates only the related entries in the ignored root `.env`, enforces file mode `0600` on POSIX systems, and does not print secret values.
 
 ### Build the Foundry IQ index
 
@@ -179,6 +188,8 @@ The repeatable setup command:
 ## Configure Microsoft Entra ID and Graph
 
 Create or reuse an Entra app registration with the **Single-page application** platform.
+
+Set `ENTRAID_TENANT_ID` for a single-tenant registration. Leave it empty only when the registration is multitenant and should use the `organizations` authority.
 
 For local development, add this exact SPA redirect URI:
 
@@ -213,6 +224,8 @@ Use an existing ACS resource configured with the capabilities you want to demons
 Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate test destinations. The API ignores browser-supplied destinations and sends only to these server-configured values.
 
 Calling identity/token creation does not contact a customer. Email and SMS actions do contact real recipients and can incur charges, so run them only with explicit test destinations. Phone-number rental and communication usage are billed through the separately managed ACS resource.
+
+The API is loopback-only by default and applies in-memory rate limits to AI and communication endpoints. This is a local demonstration, not an authenticated hosted API. Do not expose it through a public port, Codespace, or proxy without adding deployment-grade API authentication. The ACS phone number is public client configuration needed by the calling UI; the ACS connection string remains server-side. Email and SMS handlers wait for real ACS operation results rather than returning fabricated success.
 
 ## Run locally
 
@@ -261,6 +274,8 @@ Expected response:
 ```json
 {"status":"ok"}
 ```
+
+The API initializes PostgreSQL before it begins listening. If the health URL refuses the connection, check the API log and PostgreSQL readiness rather than waiting for a `starting` response.
 
 For a production-style local run:
 
@@ -337,7 +352,7 @@ To delete a **dedicated azd test environment**, first record the selected group:
 
 ```bash
 azd env get-value AZURE_RESOURCE_GROUP
-azd down --force --purge
+azd down --purge
 az group exists --subscription <subscription-id> --name <recorded-resource-group>
 azd env remove <environment-name> --force
 ```
@@ -348,4 +363,4 @@ The `az group exists` command must return `false`. Do not run `azd down` against
 
 Foundry IQ is the right fit for the current document assistant because the application owns and indexes that corpus. Microsoft Graph remains the deterministic API for explicit files, mail, calendar, and Teams views and actions.
 
-A useful future Work IQ feature would be a selected-customer meeting brief that synthesizes recent mail, meetings, Teams discussions, and tenant documents with citations. It is intentionally deferred because it adds tenant enablement, broad delegated permission, billing, and confidential server/OBO requirements while duplicating little of the current deterministic UI.
+A useful future Work IQ feature would be a selected-customer meeting brief that synthesizes recent mail, meetings, Teams discussions, and tenant documents with citations. It is intentionally deferred because it requires tenant enablement, Global Administrator consent for the broad delegated `WorkIQAgent.Ask` permission, a Copilot Studio usage-based billing plan, and a confidential server/on-behalf-of authentication flow. If added later, keep it feature-flagged and read-only rather than duplicating the existing Graph views or Foundry IQ document assistant.

@@ -18,11 +18,12 @@ function parseAzdValues(text) {
 function safeEnvironmentName(value) {
   const normalized = value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   if (!normalized) throw new Error('AZURE_ENV_NAME must contain at least one letter or number.');
-  return normalized.slice(0, 20);
+  return normalized;
 }
 
 const values = parseAzdValues(runCli('azd', ['env', 'get-values', '--no-prompt']));
 const environmentName = safeEnvironmentName(values.AZURE_ENV_NAME || '');
+const resourceNamePrefix = environmentName.slice(0, 20);
 const subscriptionId = values.AZURE_SUBSCRIPTION_ID;
 const location = values.AZURE_LOCATION || 'southcentralus';
 if (!subscriptionId) {
@@ -32,7 +33,7 @@ if (!subscriptionId) {
 const suffix = createHash('sha256').update(`${subscriptionId}:${environmentName}`).digest('hex').slice(0, 8);
 const defaults = {
   AZURE_LOCATION: location,
-  AZURE_RESOURCE_GROUP: `rg-ai-acs-orgdata-${environmentName}`,
+  AZURE_RESOURCE_GROUP: `rg-ai-acs-orgdata-${resourceNamePrefix}-${suffix}`,
   AI_ACCOUNT_NAME: `ai-acs-orgdata-${suffix}`,
   AI_PROJECT_NAME: 'proj-ai-acs-orgdata',
   AZURE_AI_SEARCH_SERVICE_NAME: `srch-ai-acs-orgdata-${suffix}`

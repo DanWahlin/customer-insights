@@ -23,7 +23,7 @@ function parseAzdValues(text) {
 }
 
 function requireValue(values, key) {
-  const value = values[key]?.trim();
+  const value = values[key] == null ? '' : String(values[key]).trim();
   if (!value) throw new Error(`The selected azd environment does not contain ${key}. Run azd provision first.`);
   return value;
 }
@@ -47,6 +47,7 @@ function updateEnvironmentFile(source, updates) {
 }
 
 const values = parseAzdValues(runCli('azd', ['env', 'get-values', '--no-prompt']));
+const subscriptionId = requireValue(values, 'AZURE_SUBSCRIPTION_ID');
 const resourceGroup = requireValue(values, 'AZURE_RESOURCE_GROUP');
 const aiAccountName = requireValue(values, 'AI_ACCOUNT_NAME');
 const searchServiceName = requireValue(values, 'AZURE_AI_SEARCH_SERVICE_NAME');
@@ -55,6 +56,7 @@ const searchEndpoint = values.AZURE_AI_SEARCH_ENDPOINT || `https://${searchServi
 
 const aiKey = runCli('az', [
   'cognitiveservices', 'account', 'keys', 'list',
+  '--subscription', subscriptionId,
   '--resource-group', resourceGroup,
   '--name', aiAccountName,
   '--query', 'key1',
@@ -63,6 +65,7 @@ const aiKey = runCli('az', [
 ], { redactOutput: true });
 const searchKey = runCli('az', [
   'search', 'admin-key', 'show',
+  '--subscription', subscriptionId,
   '--resource-group', resourceGroup,
   '--service-name', searchServiceName,
   '--query', 'primaryKey',
