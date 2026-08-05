@@ -220,7 +220,7 @@ Protect the local Express API with a separate, single-tenant Entra app registrat
 4. Add that delegated permission to the SPA registration and grant tenant consent.
 5. Set `ENTRAID_API_CLIENT_ID` to the API registration's Application client ID and `ENTRAID_API_SCOPE` to `api://<API-client-id>/access_as_user`.
 
-No API client secret is required. The SPA silently acquires a separate API token after Microsoft sign-in. Express validates the token signature, v2 issuer, API audience, tenant, expiration, and `access_as_user` scope. `/api/health` remains public; every customer, AI, Foundry IQ, and ACS endpoint requires the delegated token and returns `401` or `403` when authorization fails.
+No API client secret is required. The SPA silently acquires a separate API token after Microsoft sign-in. Express accepts that token only in the `Authorization` header and validates its signature, v2 issuer, API audience, tenant, authorized SPA client (`azp`), expiration, and `access_as_user` scope. `/api/health` remains public; every customer, AI, Foundry IQ, and ACS endpoint requires the delegated token and returns `401` or `403` when authorization fails.
 
 `TEAM_ID` and `CHANNEL_ID` are optional. Both are required before the channel-posting feature is enabled.
 

@@ -3,12 +3,13 @@ import { auth } from 'express-oauth2-jwt-bearer';
 import './config';
 
 const REQUIRED_SCOPE = 'access_as_user';
-const tenantId = process.env.ENTRAID_TENANT_ID ?? '';
-const apiClientId = process.env.ENTRAID_API_CLIENT_ID ?? '';
+const tenantId = process.env.ENTRAID_TENANT_ID?.trim() ?? '';
+const apiClientId = process.env.ENTRAID_API_CLIENT_ID?.trim() ?? '';
+const spaClientId = process.env.ENTRAID_CLIENT_ID?.trim() ?? '';
 
 export function validateEntraConfiguration() {
-  if (!tenantId || !apiClientId) {
-    throw new Error('ENTRAID_TENANT_ID and ENTRAID_API_CLIENT_ID must be configured.');
+  if (!tenantId || !apiClientId || !spaClientId) {
+    throw new Error('ENTRAID_TENANT_ID, ENTRAID_API_CLIENT_ID, and ENTRAID_CLIENT_ID must be configured.');
   }
 }
 
@@ -22,7 +23,8 @@ const validateAccessToken: RequestHandler = (req, res, next): void => {
       audience: apiClientId,
       tokenSigningAlg: 'RS256',
       validators: {
-        tid: tenantId
+        tid: tenantId,
+        azp: spaClientId
       }
     });
     accessTokenValidator(req, res, next);
@@ -30,6 +32,20 @@ const validateAccessToken: RequestHandler = (req, res, next): void => {
   catch (error) {
     next(error);
   }
+};
+
+export const requireBearerHeader: RequestHandler = (req, res, next): void => {
+  const authorization = req.headers.authorization;
+  const hasAlternateToken = typeof req.query.access_token !== 'undefined' ||
+    (typeof req.body === 'object' && req.body !== null && 'access_token' in req.body);
+
+  if (hasAlternateToken || typeof authorization !== 'string' || !/^Bearer [^\s]+$/i.test(authorization)) {
+    res.setHeader('WWW-Authenticate', 'Bearer');
+    res.status(401).json({ error: 'A valid Microsoft Entra access token is required.' });
+    return;
+  }
+
+  next();
 };
 
 export function hasRequiredScope(scopeClaim: unknown): boolean {
@@ -45,11 +61,11 @@ export const requireAccessAsUser: RequestHandler = (req, res, next): void => {
   next();
 };
 
-export const requireApiAuthentication: RequestHandler[] = [validateAccessToken, requireAccessAsUser];
+export const requireApiAuthentication: RequestHandler[] = [requireBearerHeader, validateAccessToken, requireAccessAsUser];
 
 export function handleAuthenticationError(error: unknown, _req: Request, res: Response, next: NextFunction): void {
   const authError = error as { status?: number; headers?: Record<string, string> };
-  if (authError?.status !== 401) {
+  if (authError?.status !== 400 && authError?.status !== 401) {
     next(error);
     return;
   }
