@@ -18,14 +18,9 @@ import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/com
 import { OverlayRequestResponseInterceptor } from '@core/overlay/overlay-request-response.interceptor';
 import { ApiAuthenticationInterceptor } from '@core/api-authentication.interceptor';
 import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge';
+import { isMsalAuthenticationResponse } from './auth-callback';
 
-function isAuthenticationResponse(): boolean {
-  const response = `${window.location.search}&${window.location.hash}`;
-  const isPopup = Boolean(window.opener && window.opener !== window);
-  return isPopup && /(?:^|[?&#])(code|error|error_description|state)=/i.test(response);
-}
-
-if (isAuthenticationResponse()) {
+if (isMsalAuthenticationResponse(window.location.search, window.location.hash)) {
   broadcastResponseToMainFrame().catch(error => console.error('Microsoft authentication callback failed:', error));
 } else {
   bootstrapApplication(AppComponent, {
