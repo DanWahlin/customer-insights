@@ -221,11 +221,11 @@ Use an existing ACS resource configured with the capabilities you want to demons
 - A connected email domain and sender address
 - An ACS connection string
 
-Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate test destinations. The API ignores browser-supplied destinations and sends only to these server-configured values.
+Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate email and SMS test destinations. Those handlers ignore browser-supplied destinations and send only to the server-configured values.
 
-Calling identity/token creation does not contact a customer. Email and SMS actions do contact real recipients and can incur charges, so run them only with explicit test destinations. Phone-number rental and communication usage are billed through the separately managed ACS resource.
+Calling identity/token creation does not contact a customer. Selecting **Call** does place a real outbound call to the number shown in the editable call field, and the browser VoIP token can place PSTN calls allowed by the ACS resource. Calls, email, and SMS can incur charges, so use deliberate test destinations and keep the API private. Phone-number rental and communication usage are billed through the separately managed ACS resource.
 
-The API is loopback-only by default and applies in-memory rate limits to AI and communication endpoints. This is a local demonstration, not an authenticated hosted API. Do not expose it through a public port, Codespace, or proxy without adding deployment-grade API authentication. The ACS phone number is public client configuration needed by the calling UI; the ACS connection string remains server-side. Email and SMS handlers wait for real ACS operation results rather than returning fabricated success.
+The API is loopback-only by default and applies in-memory rate limits to AI and communication endpoints. This is a local demonstration, not an authenticated hosted API. Do not expose it through a public port or proxy without adding deployment-grade API authentication. Codespace setup explicitly keeps ports 3000, 4200, and 5432 private; do not change their visibility to public. The ACS phone number is public client configuration needed by the calling UI; the ACS connection string remains server-side. Email and SMS handlers wait for real ACS operation results rather than returning fabricated success.
 
 ## Run locally
 

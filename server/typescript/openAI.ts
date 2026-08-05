@@ -64,7 +64,11 @@ async function getSQLFromNLP(userPrompt: string): Promise<QueryData> {
         const json = extractJson(results);
         if (!json) throw new Error('The model did not return a JSON query object.');
         const parsed = JSON.parse(json);
-        if (typeof parsed.sql !== 'string' || !Array.isArray(parsed.paramValues) || parsed.paramValues.length > 50) {
+        const primitiveParameters = Array.isArray(parsed.paramValues) && parsed.paramValues.every((value: unknown) =>
+            value === null || typeof value === 'string' || typeof value === 'boolean' ||
+            (typeof value === 'number' && Number.isFinite(value))
+        );
+        if (typeof parsed.sql !== 'string' || !primitiveParameters || parsed.paramValues.length > 50) {
             throw new Error('The model returned an invalid query object.');
         }
         queryData = { ...queryData, sql: parsed.sql, paramValues: parsed.paramValues };

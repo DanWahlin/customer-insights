@@ -34,6 +34,8 @@ export class EmailSmsDialogComponent implements OnInit, OnDestroy {
   emailSent = false;
   smsSent = false;
   loading = false;
+  sendingEmail = false;
+  sendingSms = false;
   placeholder = `Example: 
 Order is delayed 2 days. 
 5% discount off order. 
@@ -88,13 +90,22 @@ We're sorry.`
   }
 
   sendEmail() {
+    if (this.sendingEmail) return;
     if (this.featureFlags.acsEmailEnabled) {
+      this.error = '';
+      this.sendingEmail = true;
       this.subscription.add(
         this.acsService.sendEmail(this.emailSubject, this.emailBody, 
             this.getFirstName(this.data.customerName), this.data.customerEmailAddress)
+          .pipe(finalize(() => this.sendingEmail = false))
           .subscribe({
             next: res => {
-              if (res.status) this.emailSent = true;
+              if (res.status) {
+                this.emailSent = true;
+              }
+              else {
+                this.error = 'Email delivery was not accepted.';
+              }
             },
             error: error => {
               this.error = error?.error?.message ?? 'Email delivery failed.';
@@ -108,12 +119,21 @@ We're sorry.`
   }
 
   sendSms() {
+    if (this.sendingSms) return;
     if (this.featureFlags.acsPhoneEnabled) {
+      this.error = '';
+      this.sendingSms = true;
       this.subscription.add(
         this.acsService.sendSms(this.smsMessage, this.data.customerPhoneNumber)
+          .pipe(finalize(() => this.sendingSms = false))
           .subscribe({
             next: res => {
-              if (res.status) this.smsSent = true;
+              if (res.status) {
+                this.smsSent = true;
+              }
+              else {
+                this.error = 'SMS delivery was not accepted.';
+              }
             },
             error: error => {
               this.error = error?.error?.message ?? 'SMS delivery failed.';

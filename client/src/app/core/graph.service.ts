@@ -105,10 +105,18 @@ export class GraphService {
   async logout(): Promise<void> {
     const msal = this.requireMsal();
     const account = msal.getActiveAccount();
-    await msal.logoutPopup({ account, postLogoutRedirectUri: window.location.origin });
-    this.graphClient = undefined;
-    this.currentUserState.set(null);
-    this.signedIn.set(false);
+    try {
+      await msal.logoutPopup({
+        account,
+        postLogoutRedirectUri: window.location.origin,
+        mainWindowRedirectUri: window.location.origin
+      });
+    }
+    finally {
+      this.graphClient = undefined;
+      this.currentUserState.set(null);
+      this.signedIn.set(false);
+    }
   }
 
   async getMe(): Promise<User> {

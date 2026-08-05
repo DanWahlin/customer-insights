@@ -18,6 +18,7 @@ export class TextAreaDialogComponent implements OnInit {
   message = '';
   initialMessage = '';
   error = '';
+  sending = false;
 
   dialogRef = inject(MatDialogRef<TextAreaDialogComponent>);
   dataService = inject(DataService);
@@ -29,13 +30,16 @@ export class TextAreaDialogComponent implements OnInit {
   }
 
   async send() {
-    if (this.data.action) {
+    if (this.data.action && !this.sending) {
+      this.sending = true;
       try {
         this.error = '';
         this.data = await this.data.action(this.message);
         this.dialogRef.close(this.data);
       } catch (error) {
         this.error = error instanceof Error ? error.message : 'The Teams message could not be sent.';
+      } finally {
+        this.sending = false;
       }
     }
   }

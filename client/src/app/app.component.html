@@ -34,6 +34,9 @@
                 <mat-icon>login</mat-icon>
                 Sign in with Microsoft
             </button>
+            @if (signInError) {
+                <p class="sign-in-error" role="alert">{{ signInError }}</p>
+            }
             <p class="welcome-note">Authentication opens in a secure Microsoft sign-in window.</p>
         </section>
     }

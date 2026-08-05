@@ -33,7 +33,9 @@ for (const [name, value] of Object.entries(required)) {
 
 const openai = new OpenAI({
   apiKey: AI_API_KEY,
-  baseURL: `${AI_ENDPOINT.replace(/\/$/, '')}/openai/v1/`
+  baseURL: `${AI_ENDPOINT.replace(/\/$/, '')}/openai/v1/`,
+  timeout: 30_000,
+  maxRetries: 2
 });
 
 async function main() {
@@ -181,7 +183,8 @@ async function searchRequest(pathname: string, options: { method: string; body?:
         'api-key': AZURE_AI_SEARCH_KEY,
         'content-type': 'application/json'
       },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: AbortSignal.timeout(35_000)
     }
   );
 

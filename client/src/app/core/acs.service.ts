@@ -25,14 +25,18 @@ export class AcsService {
   }
 
   sendSms(message: string, customerPhoneNumber: string) : Observable<EmailSmsResponse> {
-    return this.http.post<EmailSmsResponse>(this.apiUrl + 'sendSms', { message, customerPhoneNumber })
+    return this.http.post<EmailSmsResponse>(this.apiUrl + 'sendSms', { message, customerPhoneNumber }, {
+      context: new HttpContext().set(SKIP_GLOBAL_OVERLAY, true)
+    })
     .pipe(
       catchError(this.handleError)
     );
   }  
 
   sendEmail(subject: string, message: string, customerName: string, customerEmailAddress: string) : Observable<EmailSmsResponse> {
-    return this.http.post<EmailSmsResponse>(this.apiUrl + 'sendEmail', { subject, message, customerName, customerEmailAddress })
+    return this.http.post<EmailSmsResponse>(this.apiUrl + 'sendEmail', { subject, message, customerName, customerEmailAddress }, {
+      context: new HttpContext().set(SKIP_GLOBAL_OVERLAY, true)
+    })
     .pipe(
       catchError(this.handleError)
     );

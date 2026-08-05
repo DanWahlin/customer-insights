@@ -9,14 +9,14 @@ async function getCustomers() {
     return pool.query('SELECT * FROM get_customers()');
 }
 
-async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: string }> {
+async function queryDb(sqlCommandObject: QueryData): Promise<any[]> {
     if (!sqlCommandObject) {
-        return { error: 'Missing SQL command object.' };
+        throw new Error('Missing SQL command object.');
     }
 
     const withoutTrailingSemicolon = normalizeReadOnlyQuery(sqlCommandObject.sql);
     if (!withoutTrailingSemicolon) {
-        return { error: 'Only a single SELECT query is allowed.' };
+        throw new Error('Only a single SELECT query is allowed.');
     }
 
     const client = await pool.connect();
@@ -45,7 +45,7 @@ async function queryDb(sqlCommandObject: QueryData): Promise<any[] | { error: st
     catch (e) {
         await client.query('ROLLBACK').catch(() => undefined);
         console.error('Error executing query:', e);
-        return { error: 'Error executing query.' };
+        throw new Error('Error executing query.');
     }
     finally {
         client.release();

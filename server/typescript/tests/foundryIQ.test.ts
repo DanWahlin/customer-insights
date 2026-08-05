@@ -18,7 +18,7 @@ test('buildGroundingSources creates a valid encoded repository citation URL', ()
   assert.match(source.citation.sourceUrl, /customer%20documents\/Company%20FAQs\.docx$/);
 });
 
-test('selectCitations returns only sources explicitly cited by the model', () => {
+test('selectCitations returns valid sources and rejects missing or unknown labels', () => {
   const citations = [1, 2].map(index => ({
     id: String(index),
     title: `Source ${index}`,
@@ -28,6 +28,6 @@ test('selectCitations returns only sources explicitly cited by the model', () =>
   })) satisfies FoundryIQCitation[];
 
   assert.deepEqual(selectCitations('Answer [S2].', citations), [citations[1]]);
-  assert.deepEqual(selectCitations('Answer without a source marker.', citations), []);
-  assert.deepEqual(selectCitations('Unknown source [S99].', citations), []);
+  assert.throws(() => selectCitations('Answer without a source marker.', citations), /did not cite a source/);
+  assert.throws(() => selectCitations('Unknown source [S99].', citations), /unknown source/);
 });

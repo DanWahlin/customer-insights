@@ -20,7 +20,8 @@ import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridg
 
 function isAuthenticationResponse(): boolean {
   const response = `${window.location.search}&${window.location.hash}`;
-  return /(?:^|[?&#])(code|error|error_description|state)=/i.test(response);
+  const isPopup = Boolean(window.opener && window.opener !== window);
+  return isPopup && /(?:^|[?&#])(code|error|error_description|state)=/i.test(response);
 }
 
 if (isAuthenticationResponse()) {

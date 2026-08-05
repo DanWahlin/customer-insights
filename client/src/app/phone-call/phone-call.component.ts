@@ -22,6 +22,7 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   initializing = false;
   error = '';
   call: Call | undefined;
+  callClient: CallClient | undefined;
   callAgent: CallAgent | undefined;
   fromNumber = environment.ACS_PHONE_NUMBER; // From .env file
   dialerVisible = false;
@@ -55,10 +56,14 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   private async initializeCallAgent(user: AcsUser) {
     try {
       const callClient = new CallClient();
+      this.callClient = callClient;
       const tokenCredential = new AzureCommunicationTokenCredential(user.token);
       this.callAgent = await callClient.createCallAgent(tokenCredential);
     }
     catch {
+      const callClient = this.callClient;
+      this.callClient = undefined;
+      if (callClient) void callClient.dispose().catch(() => undefined);
       this.error = 'Calling could not be prepared. Close this panel and try again.';
     }
     finally {
@@ -95,28 +100,46 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
     }
 
     this.error = '';
-    this.call = this.callAgent.startCall(
-      [{ phoneNumber: this.customerPhoneNumber }], {
-      alternateCallerId: { phoneNumber: this.fromNumber }
-    });
+    try {
+      this.call = this.callAgent.startCall(
+        [{ phoneNumber: this.customerPhoneNumber }], {
+        alternateCallerId: { phoneNumber: this.fromNumber }
+      });
+    }
+    catch {
+      this.error = 'The call could not be started. Check the number and try again.';
+      return;
+    }
     console.log('Calling: ', this.customerPhoneNumber);
     console.log('Call id: ', this.call?.id);
     this.inCall = true;
 
     // Adding event handlers to monitor call state
-    this.call?.on('stateChanged', () => {
+    this.call?.on('stateChanged', this.callStateChanged);
+  }
+
+  private callStateChanged = () => {
       console.log('Call state changed: ', this.call?.state);
       if (this.call?.state === 'Disconnected') {
         console.log('Call ended. Reason: ', this.call.callEndReason);
+        this.call.off('stateChanged', this.callStateChanged);
+        this.call = undefined;
         this.inCall = false;
       }
-    });
-  }
+  };
 
-  endCall() {
+  async endCall() {
     this.dialerVisible = false;
     if (this.call) {
-      this.call.hangUp({ forEveryone: true });
+      const activeCall = this.call;
+      try {
+        await activeCall.hangUp({ forEveryone: true });
+      }
+      catch {
+        this.error = 'The call could not be ended. Try again.';
+        return;
+      }
+      activeCall.off('stateChanged', this.callStateChanged);
       this.call = undefined;
       this.inCall = false;
     }
@@ -138,6 +161,20 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    const activeCall = this.call;
+    this.call = undefined;
+    const callClient = this.callClient;
+    this.callClient = undefined;
+    this.callAgent = undefined;
+    void (async () => {
+      if (activeCall) {
+        activeCall.off('stateChanged', this.callStateChanged);
+        await activeCall.hangUp({ forEveryone: true }).catch(error => console.warn('Call cleanup failed:', error));
+      }
+      if (callClient) {
+        await callClient.dispose().catch(error => console.warn('Calling client cleanup failed:', error));
+      }
+    })();
   }
 
 }

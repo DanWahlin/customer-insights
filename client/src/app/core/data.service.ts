@@ -37,16 +37,6 @@ export class DataService {
 
   }
 
-  getCustomer(id: number): Observable<Customer> {
-    return this.http.get<Customer[]>(this.apiUrl + 'customers/' + id)
-      .pipe(
-        map(customers => {
-          const customer = customers.filter((cust: Customer) => cust.id === id);
-          return customer[0];
-        }),
-        catchError(this.handleError)
-      );
-  }
 
   generateSql(prompt: string): Observable<any> {
     return this.http.post<any>(this.apiUrl + 'generateSql', { prompt })

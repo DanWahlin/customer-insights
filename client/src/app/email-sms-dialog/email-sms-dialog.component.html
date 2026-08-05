@@ -63,8 +63,9 @@
                         <div class="message-sent" role="status"><mat-icon>check_circle</mat-icon>Email sent</div>
                     }
                     <div class="draft-actions">
-                        <button mat-flat-button class="primary-action" type="button" (click)="sendEmail()" [disabled]="!emailSubject || !emailBody">
-                            <mat-icon>send</mat-icon>Send email
+                        <button mat-flat-button class="primary-action" type="button" (click)="sendEmail()"
+                                [disabled]="!emailSubject || !emailBody || sendingEmail">
+                            <mat-icon>{{ sendingEmail ? 'hourglass_top' : 'send' }}</mat-icon>{{ sendingEmail ? 'Sending…' : 'Send email' }}
                         </button>
                     </div>
                 </section>
@@ -83,8 +84,9 @@
                         <div class="message-sent" role="status"><mat-icon>check_circle</mat-icon>Text message sent</div>
                     }
                     <div class="draft-actions">
-                        <button mat-flat-button class="primary-action" type="button" (click)="sendSms()" [disabled]="!smsMessage">
-                            <mat-icon>send</mat-icon>Send text
+                        <button mat-flat-button class="primary-action" type="button" (click)="sendSms()"
+                                [disabled]="!smsMessage || sendingSms">
+                            <mat-icon>{{ sendingSms ? 'hourglass_top' : 'send' }}</mat-icon>{{ sendingSms ? 'Sending…' : 'Send text' }}
                         </button>
                     </div>
                 </section>

@@ -5,6 +5,8 @@
   right: max(24px, calc((100vw - 1440px) / 2));
   display: block;
   width: min(560px, calc(100vw - 48px));
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
   color: var(--text);
   font-size: 14px;
 }

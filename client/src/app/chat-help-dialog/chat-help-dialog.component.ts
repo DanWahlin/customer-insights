@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -8,6 +8,7 @@ import { DataService } from '@core/data.service';
 import { FoundryIQAnswer } from '@shared/interfaces';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-chat-help-dialog',
@@ -24,6 +25,7 @@ export class ChatHelpDialogComponent {
   error = '';
   loading = false;
   dataService = inject(DataService);
+  destroyRef = inject(DestroyRef);
 
   getHelp() {
     const question = this.prompt.trim();
@@ -32,7 +34,7 @@ export class ChatHelpDialogComponent {
     this.loading = true;
     this.error = '';
     this.result = null;
-    this.dataService.askFoundryIQ(question).subscribe({
+    this.dataService.askFoundryIQ(question).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: result => {
         this.result = result;
         this.loading = false;

@@ -31,6 +31,7 @@ export class AppComponent implements OnInit, OnDestroy {
   selectedCustomer: Customer | null = null;
   relatedContentLoading = false;
   relatedContentLoadError = '';
+  signInError = '';
   timer: ReturnType<typeof setTimeout> | null = null;
   iconList = [ 
     { name: 'people', icon: PEOPLE_ICON }, 
@@ -123,8 +124,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async login() {
-    const user = await this.graphService.login();
-    this.name = user.displayName ?? '';
+    this.signInError = '';
+    try {
+      const user = await this.graphService.login();
+      this.name = user.displayName ?? '';
+    }
+    catch {
+      this.signInError = 'Microsoft sign-in did not complete. Please try again.';
+    }
   }
 
   ngOnDestroy() {

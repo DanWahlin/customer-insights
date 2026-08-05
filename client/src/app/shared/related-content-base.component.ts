@@ -48,6 +48,7 @@ export abstract class RelatedContentBaseComponent {
       }
       catch {
         if (generation === this.searchGeneration) {
+          this.data = [];
           this.loadError.emit('Microsoft 365 content could not be loaded. Try again or use another search term.');
         }
       }

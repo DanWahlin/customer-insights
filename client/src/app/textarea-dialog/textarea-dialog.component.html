@@ -13,6 +13,8 @@
 
     <div mat-dialog-actions align="end">
         <button mat-stroked-button mat-dialog-close>Cancel</button>
-        <button mat-stroked-button cdkFocusInitial (click)="send()">Send</button>
+        <button mat-stroked-button cdkFocusInitial (click)="send()" [disabled]="sending || !message.trim()">
+            {{ sending ? 'Sending…' : 'Send' }}
+        </button>
     </div>
 </div>

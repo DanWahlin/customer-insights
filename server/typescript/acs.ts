@@ -9,10 +9,11 @@ async function createACSToken() {
   if (!connectionString) throw new Error('ACS_CONNECTION_STRING is not configured.');
 
   const tokenClient = new CommunicationIdentityClient(connectionString);
-  const { user, token } = await tokenClient.createUserAndToken(['voip']);
+  const { user, token, expiresOn } = await tokenClient.createUserAndToken(['voip']);
   return {
     userId: user.communicationUserId,
-    token
+    token,
+    expiresOn
   };
 }
 

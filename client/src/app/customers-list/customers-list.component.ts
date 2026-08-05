@@ -35,8 +35,9 @@ export class CustomersListComponent implements OnInit, OnDestroy {
         return this._data;
     }
     set data(value: any[]) {
-        if (value) {
+        if (Array.isArray(value)) {
             this.filteredData = this._data = value;
+            this.headers = [];
             if (value.length > 0) {
                 const headers = Object.keys(this.data[0]);
                 // filter out id property
@@ -47,6 +48,8 @@ export class CustomersListComponent implements OnInit, OnDestroy {
     headers: string[] = [];
     filteredData: any[] = [];
     queryText = 'Get the total revenue for all orders. Group by company and include the city.';
+    queryError = '';
+    dataError = '';
     phonePipe = new PhonePipe();
     subscription = new Subscription();
     @Output() customerSelected = new EventEmitter<any>();
@@ -62,8 +65,14 @@ export class CustomersListComponent implements OnInit, OnDestroy {
      }
 
     getData() {
+        this.dataError = '';
         this.subscription.add(
-            this.dataService.getCustomers().subscribe((data: any[]) => this.data = this.filteredData = data)
+            this.dataService.getCustomers().subscribe({
+              next: (data: any[]) => this.data = this.filteredData = data,
+              error: error => {
+                this.dataError = error?.error?.error ?? error?.message ?? 'Customer records could not be loaded.';
+              }
+            })
         );
     }
 
@@ -73,9 +82,19 @@ export class CustomersListComponent implements OnInit, OnDestroy {
     }
 
     getQueryData() {
+        this.queryError = '';
         this.subscription.add(
-            this.dataService.generateSql(this.queryText).subscribe((data: any) => {
+            this.dataService.generateSql(this.queryText).subscribe({
+              next: (data: any) => {
+                if (!Array.isArray(data)) {
+                  this.queryError = 'The query returned an unexpected response.';
+                  return;
+                }
                 this.data = data;
+              },
+              error: error => {
+                this.queryError = error?.error?.error ?? error?.message ?? 'The customer query could not be completed.';
+              }
             })
         );
     }

@@ -11,6 +11,10 @@
         <span class="record-count">{{ filteredData.length }} {{ filteredData.length === 1 ? 'record' : 'records' }}</span>
     </header>
 
+    @if (dataError) {
+        <div class="query-error" role="alert">{{ dataError }}</div>
+    }
+
     <section class="data-panel" aria-label="Customer records">
         <div class="list-toolbar">
             <app-filter-textbox (changed)="filter($event)"></app-filter-textbox>
@@ -97,6 +101,9 @@
             <label for="customer-query">Question or reporting request</label>
             <textarea id="customer-query" [(ngModel)]="queryText"
                 placeholder="Example: Get total revenue by company and include the city."></textarea>
+            @if (queryError) {
+                <div class="query-error" role="alert">{{ queryError }}</div>
+            }
             <div class="query-actions">
                 <button mat-flat-button class="primary-action" type="button" (click)="getQueryData()" [disabled]="!queryText.trim()">
                     <mat-icon svgIcon="search"></mat-icon>

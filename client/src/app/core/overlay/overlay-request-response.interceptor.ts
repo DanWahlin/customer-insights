@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HttpResponse } from '@angular/common/http';
 
-import { Observable, of, /* delay */ } from 'rxjs';
+import { Observable, throwError, /* delay */ } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 
 import { EventBusService, EmitEvent, Events } from '../eventbus.service';
@@ -31,9 +31,9 @@ export class OverlayRequestResponseInterceptor implements HttpInterceptor {
                 this.eventBus.emit(new EmitEvent(Events.HttpResponse));
               }
             }),
-            catchError(() => {
+            catchError(error => {
               this.eventBus.emit(new EmitEvent(Events.HttpResponse));
-              return of({}) as Observable<HttpEvent<any>>;
+              return throwError(() => error);
             })
           );
   }

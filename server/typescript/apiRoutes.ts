@@ -49,15 +49,12 @@ router.post('/generateSql', aiLimiter, async (req: Request, res: Response): Prom
         // Call Azure OpenAI to convert the user prompt into a SQL query
         const sqlCommandObject = await getSQLFromNLP(userPrompt);
 
-        let result: any[] = [];
-        // Execute the SQL query
-        if (sqlCommandObject && !sqlCommandObject.error) {
-            result = await queryDb(sqlCommandObject) as any[];
+        if (!sqlCommandObject || sqlCommandObject.error) {
+            res.status(422).json({ error: sqlCommandObject?.error || 'The model did not produce a query.' });
+            return;
         }
-        else {
-            result = [ { query_error : sqlCommandObject.error } ];
-        }
-        res.json(result);
+
+        res.json(await queryDb(sqlCommandObject));
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Error generating or running SQL query.' });

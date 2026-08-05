@@ -269,6 +269,16 @@
   color: #8a96a5;
 }
 
+.query-error {
+  padding: 11px 13px;
+  border: 1px solid #f0b7b2;
+  border-radius: var(--radius-sm);
+  background: #fff5f4;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .query-actions {
   display: flex;
   align-items: center;
