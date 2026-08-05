@@ -1,5 +1,5 @@
 @if (this.data) {
-  <section>
+  <section class="related-section">
     <h2>Calendar Events</h2>
     <div class="scroller">
       @for (event of this.data; track event.id ?? $index) {
@@ -45,7 +45,7 @@
         </div>
       }
       @if (!this.data.length) {
-        <h3>No events found</h3>
+        <div class="content-empty"><h3>No related calendar events</h3><p>Try another customer name or search term.</p></div>
       }
     </div>
   </section>

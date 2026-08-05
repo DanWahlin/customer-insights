@@ -1,60 +1,97 @@
-<h2 mat-dialog-title>{{ title }}</h2>
+<div class="dialog-title" mat-dialog-title>
+    <div class="dialog-title-icon" aria-hidden="true"><mat-icon>edit_note</mat-icon></div>
+    <div>
+        <h2>{{ title }}</h2>
+        <p>{{ data.customerName }} · {{ data.company }}</p>
+    </div>
+    <button mat-dialog-close class="close-button" type="button" aria-label="Close message composer">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
 
-<div>
-    <mat-dialog-content class="mat-typography">
-        <button mat-dialog-close class="close-button">
-            <mat-icon>close</mat-icon>
-        </button>
-        <mat-tab-group #tabgroup [animationDuration]="'0ms'" class="tab-group">
-            @if (this.featureFlags.aiEnabled) {
-                <mat-tab label="Message Generator">
-                    <div class="message-label">Message Rules:</div>
-                    <br />
-                    <textarea type="text" [(ngModel)]="prompt" title="Message" [placeholder]="placeholder"></textarea>
-                    <div mat-dialog-actions align="end">
-                        <button mat-stroked-button cdkFocusInitial (click)="generateEmailSmsMessages()"
-                                [disabled]="!prompt.trim() || loading">
-                            {{ loading ? 'Working…' : 'Generate Email/SMS Messages' }}
-                        </button>
+<mat-dialog-content class="message-dialog-content">
+    <mat-tab-group #tabgroup [animationDuration]="'0ms'" class="message-tabs">
+        @if (featureFlags.aiEnabled) {
+            <mat-tab label="Generate drafts">
+                <section class="generator-panel" aria-labelledby="message-rules-title">
+                    <div class="section-intro">
+                        <h3 id="message-rules-title">Describe the message</h3>
+                        <p>Provide the situation, desired tone, and any offer or next step. AI will create editable email and text drafts.</p>
                     </div>
+                    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                        <mat-label>Message requirements</mat-label>
+                        <textarea matInput [(ngModel)]="prompt" rows="7" [placeholder]="placeholder"></textarea>
+                        <mat-hint>Review every draft before sending it to the configured test recipient.</mat-hint>
+                    </mat-form-field>
+
                     @if (loading) {
                         <div class="generation-status" role="status" aria-live="polite">
                             <mat-spinner diameter="28"></mat-spinner>
-                            <span>Generating email and SMS drafts…</span>
+                            <span>Generating email and text drafts…</span>
                         </div>
                     }
-                    @if (this.error) {
-                        <div class="error-message">{{ error }}</div>
+                    @if (error) {
+                        <div class="error-message" role="alert">{{ error }}</div>
                     }
-                </mat-tab>
-            }
-            <mat-tab label="Email/SMS">
-                <div class="grid-container">
-                    <div>
-                        <div class="message-label">Email Message:</div>
-                        <br />
-                        <input type="text" [(ngModel)]="emailSubject" title="Subject" class="email-subject" placeholder="Subject" />
-                        <textarea type="text" [(ngModel)]="emailBody" title="Message" class="email-message"></textarea>
-                        @if (this.emailSent) {
-                            <div class="message-sent">Email sent!</div>
-                        }
-                        <div mat-dialog-actions align="end">
-                            <button mat-stroked-button cdkFocusInitial (click)="sendEmail()" [disabled]="!emailSubject || !emailBody">Send Email</button>
-                        </div>
+                    <div class="generator-actions">
+                        <button mat-flat-button class="primary-action" cdkFocusInitial type="button"
+                                (click)="generateEmailSmsMessages()" [disabled]="!prompt.trim() || loading">
+                            <mat-icon>auto_awesome</mat-icon>
+                            {{ loading ? 'Generating…' : 'Generate drafts' }}
+                        </button>
                     </div>
-
-                    <div>
-                        <div class="message-label">SMS Message:</div>
-                        <textarea type="text" [(ngModel)]="smsMessage" title="Message" class="sms-message"></textarea>
-                        @if (this.smsSent) {
-                            <div class="message-sent">SMS message sent!</div>
-                        }
-                        <div mat-dialog-actions align="end">
-                            <button mat-stroked-button cdkFocusInitial (click)="sendSms()" [disabled]="!smsMessage">Send SMS</button>
-                        </div>
-                    </div>
-                </div>
+                </section>
             </mat-tab>
-        </mat-tab-group>
-    </mat-dialog-content>
-</div>
+        }
+
+        <mat-tab label="Review drafts">
+            <div class="draft-grid">
+                <section class="draft-card" aria-labelledby="email-draft-title">
+                    <div class="draft-heading">
+                        <mat-icon aria-hidden="true">mail</mat-icon>
+                        <div><h3 id="email-draft-title">Email</h3><p>Edit the subject and message before sending.</p></div>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                        <mat-label>Subject</mat-label>
+                        <input matInput type="text" [(ngModel)]="emailSubject" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                        <mat-label>Email message</mat-label>
+                        <textarea matInput [(ngModel)]="emailBody" rows="9"></textarea>
+                    </mat-form-field>
+                    @if (emailSent) {
+                        <div class="message-sent" role="status"><mat-icon>check_circle</mat-icon>Email sent</div>
+                    }
+                    <div class="draft-actions">
+                        <button mat-flat-button class="primary-action" type="button" (click)="sendEmail()" [disabled]="!emailSubject || !emailBody">
+                            <mat-icon>send</mat-icon>Send email
+                        </button>
+                    </div>
+                </section>
+
+                <section class="draft-card" aria-labelledby="sms-draft-title">
+                    <div class="draft-heading">
+                        <mat-icon aria-hidden="true">sms</mat-icon>
+                        <div><h3 id="sms-draft-title">Text message</h3><p>Keep the draft concise and verify the destination.</p></div>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                        <mat-label>Text message</mat-label>
+                        <textarea matInput [(ngModel)]="smsMessage" rows="9"></textarea>
+                        <mat-hint align="end">{{ smsMessage.length }} characters</mat-hint>
+                    </mat-form-field>
+                    @if (smsSent) {
+                        <div class="message-sent" role="status"><mat-icon>check_circle</mat-icon>Text message sent</div>
+                    }
+                    <div class="draft-actions">
+                        <button mat-flat-button class="primary-action" type="button" (click)="sendSms()" [disabled]="!smsMessage">
+                            <mat-icon>send</mat-icon>Send text
+                        </button>
+                    </div>
+                </section>
+            </div>
+            @if (error) {
+                <div class="error-message draft-error" role="alert">{{ error }}</div>
+            }
+        </mat-tab>
+    </mat-tab-group>
+</mat-dialog-content>

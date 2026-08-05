@@ -1,49 +1,70 @@
-<h2 mat-dialog-title>Customer Document Assistant</h2>
-
-<mat-dialog-content class="mat-typography">
-  <button mat-dialog-close class="close-button" aria-label="Close">
+<div class="dialog-title" mat-dialog-title>
+  <div class="dialog-title-icon" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></div>
+  <div>
+    <h2>Customer Document Assistant</h2>
+    <p>Grounded answers from the documents indexed by this application</p>
+  </div>
+  <button mat-dialog-close class="close-button" type="button" aria-label="Close document assistant">
     <mat-icon>close</mat-icon>
   </button>
+</div>
 
-  <p>Ask Foundry IQ about the customer documents indexed by this application.</p>
-  <textarea [(ngModel)]="prompt" title="Question" [placeholder]="placeholder"></textarea>
+<mat-dialog-content class="assistant-content">
+  <section class="assistant-form" aria-labelledby="assistant-question-label">
+    <mat-form-field appearance="outline" class="question-field" subscriptSizing="dynamic">
+      <mat-label id="assistant-question-label">Ask about customer documents</mat-label>
+      <textarea matInput [(ngModel)]="prompt" rows="5" [placeholder]="placeholder"></textarea>
+      <mat-hint>Answers include citations when relevant sources are found.</mat-hint>
+    </mat-form-field>
 
-  @if (loading) {
-    <div class="status" role="status" aria-live="polite">
-      <mat-spinner diameter="28"></mat-spinner>
-      <span>Searching the knowledge base and grounding an answer…</span>
+    <div class="suggestions" aria-label="Suggested questions">
+      <span>Try:</span>
+      <button type="button" (click)="prompt = 'Which customers have delayed orders?'">Delayed orders</button>
+      <button type="button" (click)="prompt = 'Summarize the supplies associated with Adventure Works Cycles.'">Customer supplies</button>
+      <button type="button" (click)="prompt = 'What discounts are mentioned in the customer documents?'">Discounts</button>
     </div>
-  }
-  @if (error) {
-    <p class="error" role="alert">{{ error }}</p>
-  }
+
+    @if (loading) {
+      <div class="status" role="status" aria-live="polite">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Searching the knowledge base and grounding an answer…</span>
+      </div>
+    }
+    @if (error) {
+      <p class="error" role="alert">{{ error }}</p>
+    }
+  </section>
+
   @if (result) {
     <section class="response" aria-live="polite">
-      <h3>Answer</h3>
+      <div class="response-heading"><mat-icon aria-hidden="true">subject</mat-icon><h3>Answer</h3></div>
       <p>{{ result.answer }}</p>
       @if (result.citations.length) {
-        <h3>Sources</h3>
-        <ol>
-          @for (citation of result.citations; track citation.id) {
-            <li>
-              @if (citation.sourceUrl) {
-                <a [href]="citation.sourceUrl" target="_blank" rel="noopener">{{ citation.title }}</a>
-              } @else {
-                {{ citation.title }}
-              }
-              @if (citation.customerName !== 'General') {
-                <span> — {{ citation.customerName }}</span>
-              }
-            </li>
-          }
-        </ol>
+        <div class="sources">
+          <h3>Sources</h3>
+          <ol>
+            @for (citation of result.citations; track citation.id) {
+              <li>
+                @if (citation.sourceUrl) {
+                  <a [href]="citation.sourceUrl" target="_blank" rel="noopener">{{ citation.title }}</a>
+                } @else {
+                  {{ citation.title }}
+                }
+                @if (citation.customerName !== 'General') {
+                  <span> · {{ citation.customerName }}</span>
+                }
+              </li>
+            }
+          </ol>
+        </div>
       }
     </section>
   }
 </mat-dialog-content>
 
-<div mat-dialog-actions align="end">
-  <button mat-stroked-button cdkFocusInitial (click)="getHelp()" [disabled]="!prompt.trim() || loading">
-    {{ loading ? 'Working…' : 'Ask Foundry IQ' }}
+<div mat-dialog-actions align="end" class="assistant-actions">
+  <button mat-flat-button class="primary-action" cdkFocusInitial type="button" (click)="getHelp()" [disabled]="!prompt.trim() || loading">
+    <mat-icon>search</mat-icon>
+    {{ loading ? 'Searching…' : 'Ask Foundry IQ' }}
   </button>
 </div>

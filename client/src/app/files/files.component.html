@@ -1,9 +1,9 @@
 @if (this.data) {
-  <section>
+  <section class="related-section">
     <h2>Files</h2>
-    <div class="scroller">
+    <div class="scroller content-list">
       @for (file of this.data; track file.id) {
-        <mat-card>
+        <mat-card appearance="outlined" class="content-item">
           <mat-card-header>
             <mat-card-title>{{ file.name }}</mat-card-title>
             @if (file.lastModifiedDateTime) {
@@ -17,7 +17,7 @@
       }
     </div>
     @if (!this.data.length) {
-      <h3>No files found</h3>
+      <div class="content-empty"><h3>No related files</h3><p>Try another customer name or search term.</p></div>
     }
   </section>
 }

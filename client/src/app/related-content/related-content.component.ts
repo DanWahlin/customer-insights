@@ -6,7 +6,7 @@ import { CalendarEventsComponent } from '../calendar-events/calendar-events.comp
 import { EmailsComponent } from '../emails/emails.component';
 import { ChatsComponent } from '../chats/chats.component';
 import { FilesComponent } from '../files/files.component';
-import { MatBadgeModule } from '@angular/material/badge';
+
 import { MatTabsModule } from '@angular/material/tabs';
 import { FilterTextboxComponent } from '../shared/filter-textbox.component';
 import { MatCardModule } from '@angular/material/card';
@@ -25,7 +25,7 @@ type ContentCountType = keyof ContentCounts;
     templateUrl: './related-content.component.html',
     styleUrls: ['./related-content.component.scss'],
     imports: [MatCardModule, MatIconModule, FilterTextboxComponent, MatTabsModule,
-        MatBadgeModule, FilesComponent, ChatsComponent, EmailsComponent, CalendarEventsComponent],
+        FilesComponent, ChatsComponent, EmailsComponent, CalendarEventsComponent],
     changeDetection: ChangeDetectionStrategy.Eager
 })
 export class RelatedContentComponent {

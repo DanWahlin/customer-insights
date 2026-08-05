@@ -1,33 +1,159 @@
-mat-card {
-    margin-bottom: 10px;
+.workspace {
+  scroll-margin-top: 92px;
 }
 
-.mat-mdc-card-title {
-    font-size: 1.2em;
+.workspace-card {
+  overflow: hidden;
+  border-color: var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
-mat-panel-title {
-    margin-top: 4px;
-    margin-left: 15px;
-    font-size: 1.2em;
-    height: 50px;
+.workspace-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 64px 18px 22px;
+  border-bottom: 1px solid var(--line);
 }
 
-mat-icon[svgIcon] {
-    margin-right: 5px;
-    width: 1.4em;
+.customer-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.panel-title {
-    margin-left: 18px;
-    font-size: 1em;
+.workspace-heading {
+  min-width: 0;
 }
 
-.mat-badge-medium.mat-badge-after .mat-badge-content {
-    top: -10px;
-    right: -10px;
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
-.mat-badge-accent .mat-badge-content {
-    background-color: #ff0000;
+.workspace-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -.015em;
+}
+
+.workspace-heading p:last-child {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.workspace-search {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  background: var(--surface-subtle);
+}
+
+.workspace-search p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+mat-card-content {
+  padding: 0 22px 22px !important;
+}
+
+.content-tabs {
+  margin-top: 4px;
+}
+
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tab-label mat-icon {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #edf1f5;
+  color: #536174;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tab-content {
+  min-height: 180px;
+  padding-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .workspace-header {
+    align-items: flex-start;
+    padding: 18px 54px 16px 16px;
+  }
+
+  .customer-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .workspace-heading h2 {
+    font-size: 19px;
+  }
+
+  .workspace-heading p:last-child {
+    overflow-wrap: anywhere;
+  }
+
+  .workspace-search {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .workspace-search app-filter-textbox {
+    width: 100%;
+  }
+
+  mat-card-content {
+    padding: 0 12px 16px !important;
+  }
+
+  .tab-label {
+    gap: 5px;
+  }
+
+  .tab-label > span:not(.tab-count) {
+    display: none;
+  }
 }

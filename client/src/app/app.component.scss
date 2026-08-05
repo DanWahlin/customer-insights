@@ -1,0 +1,96 @@
+.app-main {
+  width: min(100% - 48px, 1440px);
+  margin: 0 auto;
+  padding: 32px 0 56px;
+}
+
+.app-content {
+  display: grid;
+  gap: 24px;
+}
+
+.app-content > *,
+app-customers-list {
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+
+.welcome-panel {
+  width: min(100%, 720px);
+  margin: 72px auto 0;
+  padding: 56px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.welcome-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  background: var(--surface-accent);
+  color: var(--primary);
+}
+
+.welcome-icon mat-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 36px;
+  line-height: 1;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.welcome-panel h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -.025em;
+}
+
+.welcome-copy {
+  max-width: 570px;
+  margin: 20px auto 28px;
+  color: var(--text-muted);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.welcome-panel .primary-action {
+  min-height: 48px;
+  padding-inline: 22px;
+  border-radius: 24px;
+}
+
+.welcome-note {
+  margin: 16px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .app-main {
+    width: min(100% - 24px, 1440px);
+    padding-top: 20px;
+  }
+
+  .welcome-panel {
+    margin-top: 24px;
+    padding: 36px 24px;
+  }
+}

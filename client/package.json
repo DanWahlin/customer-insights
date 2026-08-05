@@ -43,6 +43,9 @@
     "@angular/build": "^22.1.2",
     "@angular/cli": "^22.1.2",
     "@angular/compiler-cli": "^22.1.0",
-    "typescript": "~6.0.3"
+    "angular-eslint": "^22.1.0",
+    "eslint": "^9.39.5",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.66.0"
   }
 }

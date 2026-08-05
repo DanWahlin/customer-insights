@@ -1,5 +1,6 @@
 import { ApplicationRef, Component, ComponentRef, EnvironmentInjector, OnDestroy, OnInit, createComponent, inject, ChangeDetectionStrategy } from '@angular/core';
-import { MatIconRegistry } from '@angular/material/icon';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FeatureFlagsService } from '@core/feature-flags.service';
 import { GraphService } from '@core/graph.service';
@@ -16,7 +17,7 @@ import { HeaderComponent } from './header/header.component';
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [HeaderComponent, CustomersListComponent, OverlayComponent, RouterOutlet]
+    imports: [HeaderComponent, CustomersListComponent, OverlayComponent, RouterOutlet, MatButtonModule, MatIconModule]
 })
 export class AppComponent implements OnInit, OnDestroy {
   get loggedIn() {
@@ -84,6 +85,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   userLoggedIn(user: { displayName?: string | null }) {
+    this.name = user.displayName ?? '';
+  }
+
+  async login() {
+    const user = await this.graphService.login();
     this.name = user.displayName ?? '';
   }
 

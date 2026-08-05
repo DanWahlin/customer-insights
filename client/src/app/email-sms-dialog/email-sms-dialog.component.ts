@@ -11,6 +11,8 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs/operators';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 
 @Component({
@@ -18,7 +20,8 @@ import { finalize } from 'rxjs/operators';
     templateUrl: './email-sms-dialog.component.html',
     styleUrls: ['./email-sms-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [MatDialogModule, MatIconModule, MatTabsModule, FormsModule, MatButtonModule, MatProgressSpinnerModule]
+    imports: [MatDialogModule, MatIconModule, MatTabsModule, FormsModule, MatButtonModule,
+      MatProgressSpinnerModule, MatFormFieldModule, MatInputModule]
 })
 export class EmailSmsDialogComponent implements OnInit, OnDestroy {
   title = '';

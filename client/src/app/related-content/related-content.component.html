@@ -1,119 +1,54 @@
-@if (this.customer) {
-    <div [hidden]="closed">
-        <mat-card>
-            <mat-card-header>
-                <mat-card-title>    
-                    <button class="close-button" (click)="closeCard()">
-                        <mat-icon>close</mat-icon>
-                    </button>
-                    <app-filter-textbox [filter]="selectedQueryText" [label]="''" (changed)="filter($event)" />
-                    <br /><br />
-                </mat-card-title>
-            </mat-card-header>
+@if (customer) {
+    <section [hidden]="closed" class="workspace" aria-labelledby="workspace-title">
+        <mat-card appearance="outlined" class="workspace-card">
+            <header class="workspace-header">
+                <div class="customer-avatar" aria-hidden="true">{{ customer.company.charAt(0) }}</div>
+                <div class="workspace-heading">
+                    <p class="eyebrow">Microsoft 365 context</p>
+                    <h2 id="workspace-title">{{ customer.company }}</h2>
+                    <p>{{ customer.city }} · {{ customer.email }}</p>
+                </div>
+                <button class="close-button" type="button" (click)="closeCard()" aria-label="Close customer workspace">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </header>
+
+            <div class="workspace-search">
+                <app-filter-textbox [filter]="selectedQueryText" label="Search Microsoft 365" (changed)="filter($event)" />
+                <p>Search related content using the customer name or another keyword.</p>
+            </div>
+
             <mat-card-content>
-                <mat-tab-group [animationDuration]="'0ms'" mat-stretch-tabs="false" preserveContent="true">
-                    <mat-tab #files>
+                <mat-tab-group [animationDuration]="'0ms'" mat-stretch-tabs="false" preserveContent="true" class="content-tabs">
+                    <mat-tab #files aria-label="Files">
                         <ng-template mat-tab-label>
-                            <div matBadge="{{contentCounts.files}}" matBadgeOverlap="false" matBadgeColor="accent"
-                                matBadgePosition="above">
-                                <mat-icon svgIcon="file"></mat-icon>
-                            </div>
+                            <span class="tab-label"><mat-icon svgIcon="file"></mat-icon><span>Files</span><span class="tab-count">{{ contentCounts.files }}</span></span>
                         </ng-template>
                     </mat-tab>
-
-                    <mat-tab #chats>
-                        <ng-template matTabLabel>
-                            <div matBadge="{{contentCounts.chats}}" matBadgeOverlap="false" matBadgeColor="accent"
-                                matBadgePosition="above">
-                                <mat-icon svgIcon="chat"></mat-icon>
-                            </div>
-                        </ng-template>
-                    </mat-tab>
-
-                    <mat-tab #emails>
+                    <mat-tab #chats aria-label="Teams conversations">
                         <ng-template mat-tab-label>
-                            <div matBadge="{{contentCounts.emails}}" matBadgeOverlap="false" matBadgeColor="accent"
-                                matBadgePosition="above">
-                                <mat-icon svgIcon="email"></mat-icon>
-                            </div>
+                            <span class="tab-label"><mat-icon svgIcon="chat"></mat-icon><span>Teams</span><span class="tab-count">{{ contentCounts.chats }}</span></span>
                         </ng-template>
                     </mat-tab>
-
-                    <mat-tab #calendarEvents>
+                    <mat-tab #emails aria-label="Email">
                         <ng-template mat-tab-label>
-                            <div matBadge="{{contentCounts.agendaEvents}}" matBadgeOverlap="false" matBadgeColor="accent"
-                                matBadgePosition="above">
-                                <mat-icon svgIcon="agenda"></mat-icon>
-                            </div>
+                            <span class="tab-label"><mat-icon svgIcon="email"></mat-icon><span>Email</span><span class="tab-count">{{ contentCounts.emails }}</span></span>
                         </ng-template>
                     </mat-tab>
-
+                    <mat-tab #calendarEvents aria-label="Calendar events">
+                        <ng-template mat-tab-label>
+                            <span class="tab-label"><mat-icon svgIcon="agenda"></mat-icon><span>Calendar</span><span class="tab-count">{{ contentCounts.agendaEvents }}</span></span>
+                        </ng-template>
+                    </mat-tab>
                 </mat-tab-group>
 
-                <!-- 
-                    We need the web components to load immediately in order to get the total count that is displayed on each tab
-                    and allow the user to have "instant" access to the data in each tab. I'd prefer to be able to tell Angular Material tabs to render their
-                    tab content on load (but hide the content until a given tab is selected), but that doesn't seem to be possible in this case so using this "workaround".
-                -->
-                <app-files [hidden]="!files.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('files', $event)" />
-                <app-chats [hidden]="!chats.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('chats', $event)" />
-                <app-emails [hidden]="!emails.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('emails', $event)" />
-                <app-calendar-events [hidden]="!calendarEvents.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('agendaEvents', $event)" />
+                <div class="tab-content">
+                    <app-files [hidden]="!files.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('files', $event)" />
+                    <app-chats [hidden]="!chats.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('chats', $event)" />
+                    <app-emails [hidden]="!emails.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('emails', $event)" />
+                    <app-calendar-events [hidden]="!calendarEvents.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('agendaEvents', $event)" />
+                </div>
             </mat-card-content>
         </mat-card>
-
-        <!-- <mat-accordion multi>
-            <mat-expansion-panel hideToggle>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        <div matBadge="{{contentCounts.files}}" matBadgeOverlap="false" matBadgeColor="accent"
-                            matBadgePosition="above">
-                            <mat-icon svgIcon="file"></mat-icon>
-                        </div>
-                        <div class="panel-title">Files</div>
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-                <app-files [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('files', $event)"></app-files>
-            </mat-expansion-panel>
-
-            <mat-expansion-panel hideToggle>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        <div matBadge="{{contentCounts.chats}}" matBadgeOverlap="false" matBadgeColor="accent"
-                            matBadgePosition="above">
-                            <mat-icon svgIcon="chat"></mat-icon>
-                        </div>
-                        <div class="panel-title">Chats</div>
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-                <app-chats [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('chats', $event)"></app-chats>
-            </mat-expansion-panel>
-
-            <mat-expansion-panel hideToggle>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        <div matBadge="{{contentCounts.emails}}" matBadgeOverlap="false" matBadgeColor="accent"
-                            matBadgePosition="above">
-                            <mat-icon svgIcon="email"></mat-icon>
-                        </div>
-                        <div class="panel-title">Emails</div>
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-                <app-emails [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('emails', $event)"></app-emails>
-            </mat-expansion-panel>
-
-            <mat-expansion-panel hideToggle>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        <div matBadge="{{contentCounts.agendaEvents}}" matBadgeOverlap="false" matBadgeColor="accent"
-                            matBadgePosition="above">
-                            <mat-icon svgIcon="agenda"></mat-icon>
-                        </div>
-                        <div class="panel-title">Agenda Events</div>
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-                <app-agenda [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('agendaEvents', $event)"></app-agenda>
-            </mat-expansion-panel>
-        </mat-accordion> -->
-    </div>
+    </section>
 }

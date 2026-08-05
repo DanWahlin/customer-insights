@@ -1,57 +1,206 @@
-.message-label {
-    margin-right: 5px;
-    vertical-align: top;
-    font-weight: bold;
+.dialog-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 22px 64px 16px 24px;
+  border-bottom: 1px solid var(--line);
 }
 
-textarea {
-    height: 250px;
-    width: 100%;
-
-    &.email-message {
-        margin-top: 15px;
-    }
-
-    &.sms-message {
-        margin-top:70px;
-    }
+.dialog-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--surface-accent);
+  color: var(--primary);
 }
 
-.email-subject {
-    width: 100%;
+.dialog-title-icon mat-icon {
+  line-height: 1;
 }
 
-.message-sent {
-    font-weight: bold;
-    color: green;
-    font-size: 1.2em;
+.dialog-title h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
-.error-message {
-    font-weight: bold;
-    color: red;
-    font-size: 1.2em;
+.dialog-title p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.message-dialog-content {
+  position: relative;
+  width: 100%;
+  max-height: min(76vh, 760px);
+  padding: 0 24px 24px !important;
+}
+
+.message-tabs {
+  min-height: 430px;
+}
+
+.generator-panel {
+  display: grid;
+  gap: 18px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 14px 4px 8px;
+}
+
+.section-intro h3,
+.draft-heading h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.section-intro p,
+.draft-heading p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.generator-actions,
+.draft-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.generator-actions button,
+.draft-actions button {
+  min-height: 42px;
+  border-radius: 21px;
 }
 
 .generation-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #3f51b5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-accent);
+  color: var(--primary-strong);
 }
 
-.tab-group {
-    height: 550px;
-    width: 60vw;
+.error-message {
+  padding: 11px 13px;
+  border: 1px solid #f0b7b2;
+  border-radius: var(--radius-sm);
+  background: #fff5f4;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.grid-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 20px;
+.draft-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 2px 6px;
 }
 
-.grid-container > div {
-    padding: 20px;
-    border: 1px solid #ccc;
+.draft-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.draft-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.draft-heading > mat-icon {
+  margin-top: 1px;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.message-sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.message-sent mat-icon {
+  width: 19px;
+  height: 19px;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.draft-error {
+  margin-top: 12px;
+}
+
+@media (max-width: 780px) {
+  .message-dialog-content {
+    width: 100%;
+  }
+
+  .draft-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .dialog-title {
+    padding: 18px 52px 14px 16px;
+  }
+
+  .dialog-title-icon {
+    display: none;
+  }
+
+  .message-dialog-content {
+    width: 100%;
+    max-height: calc(100vh - 110px);
+    padding: 0 14px 18px !important;
+  }
+
+  .message-tabs {
+    min-height: 390px;
+  }
+
+  .message-tabs .mat-mdc-tab {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .generator-panel {
+    gap: 14px;
+  }
+
+  .generator-actions button,
+  .draft-actions button {
+    width: 100%;
+  }
+
+  .draft-card {
+    padding: 14px;
+  }
 }

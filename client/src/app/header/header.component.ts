@@ -76,7 +76,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const dialogRef = this.dialog.open(ChatHelpDialogComponent);
+    const dialogRef = this.dialog.open(ChatHelpDialogComponent, {
+      width: '720px',
+      maxWidth: 'calc(100vw - 24px)'
+    });
     this.subscription.add(dialogRef.afterClosed().subscribe(response => {
       console.log('Chat Help dialog closed:', response);
     }));

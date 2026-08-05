@@ -1,10 +1,53 @@
-.home-icon {
-  margin-top: 0;
-  margin-right: 5px;
+:host {
+  display: block;
+  position: sticky;
+  z-index: 100;
+  top: 0;
+}
+
+mat-toolbar {
+  min-height: 68px;
+  padding: 0 max(24px, calc((100vw - 1440px) / 2));
+  border-bottom: 1px solid rgb(255 255 255 / 16%);
+  background: #153b5b;
+  color: #fff;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 14%);
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-right: 12px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 11px;
+  background: rgb(255 255 255 / 10%);
+}
+
+.brand-mark mat-icon {
+  line-height: 1;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
 .title {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.subtitle {
   margin-top: 3px;
+  color: rgb(255 255 255 / 68%);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .04em;
 }
 
 .spacer {
@@ -16,6 +59,10 @@
   align-items: center;
   gap: 4px;
   height: 100%;
+}
+
+.header-actions > button:not(.account-button) {
+  color: #fff;
 }
 
 .account-button,
@@ -43,7 +90,7 @@
   margin: 0;
   border: 2px solid rgb(255 255 255 / 75%);
   border-radius: 50%;
-  background: #565656;
+  background: #2f6f9f;
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -55,17 +102,17 @@
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  padding: 16px;
-  color: #222;
+  padding: 18px;
+  color: var(--text);
 }
 
 .account-avatar-large {
   flex: 0 0 auto;
   width: 48px;
   height: 48px;
-  margin-right: 8px;
-  border-color: #d0d0d0;
-  background: #3f51b5;
+  margin-right: 12px;
+  border-color: var(--line);
+  background: var(--primary);
   font-size: 16px;
 }
 
@@ -83,11 +130,38 @@
 }
 
 .account-details span {
-  margin-top: 2px;
-  color: #666;
+  margin-top: 3px;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .account-sign-out.mat-mdc-menu-item {
-  padding-left: 72px;
+  padding-left: 78px;
+}
+
+@media (max-width: 600px) {
+  mat-toolbar {
+    min-height: 60px;
+    padding: 0 8px 0 12px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    margin-right: 9px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .account-button,
+  .chat-help-button {
+    width: 44px;
+    height: 44px;
+  }
 }

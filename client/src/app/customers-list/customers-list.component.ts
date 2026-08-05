@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Component, EventEmitter, OnDestroy, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { SorterService } from '@core/sorter.service';
@@ -18,6 +18,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
 import { FilterTextboxComponent } from '../shared/filter-textbox.component';
 import { MatIconModule } from '@angular/material/icon';
+import { NgTemplateOutlet } from '@angular/common';
 
 @Component({
     selector: 'app-customers-list',
@@ -25,7 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
     styleUrls: ['./customers-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatIconModule, FilterTextboxComponent, MatButtonModule,
-        MatMenuModule, FormsModule, TitleCaseUnderscorePipe, DynamicPipe]
+        MatMenuModule, FormsModule, TitleCaseUnderscorePipe, DynamicPipe, NgTemplateOutlet]
 })
 export class CustomersListComponent implements OnInit, OnDestroy {
     // Due to dynamic OpenAI query we're going with any[] for type of the data property
@@ -87,6 +88,11 @@ export class CustomersListComponent implements OnInit, OnDestroy {
         this.sorterService.sort(this.filteredData, prop);
     }
 
+    sortDirection(prop: string): 'ascending' | 'descending' | 'none' {
+        if (this.sorterService.property !== prop) return 'none';
+        return this.sorterService.direction === 1 ? 'ascending' : 'descending';
+    }
+
     getRelatedData(data: any) {
         this.customerSelected.emit(data);
     }
@@ -109,7 +115,9 @@ export class CustomersListComponent implements OnInit, OnDestroy {
 
             // Open the dialog
             const dialogRef = this.dialog.open(EmailSmsDialogComponent, {
-                data: dialogData
+                data: dialogData,
+                width: '1000px',
+                maxWidth: 'calc(100vw - 24px)'
             });
 
             // Subscribe to the dialog afterClosed observable to get the dialog result

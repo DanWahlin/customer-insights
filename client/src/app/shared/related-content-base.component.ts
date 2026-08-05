@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from "@angular/core";
 import { GraphService } from "@core/graph.service";
 

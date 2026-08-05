@@ -1,9 +1,9 @@
 @if (this.data) {
-  <section>
+  <section class="related-section">
     <h2>Email</h2>
-    <div class="scroller">
+    <div class="scroller content-list">
       @for (email of this.data; track email.id ?? $index) {
-        <mat-card>
+        <mat-card appearance="outlined" class="content-item">
           <mat-card-header>
             <mat-card-title>{{ email.subject }}</mat-card-title>
             <mat-card-subtitle>{{ email.bodyPreview }}</mat-card-subtitle>
@@ -15,7 +15,7 @@
       }
     </div>
     @if (!this.data.length) {
-      <h3>No email messages found</h3>
+      <div class="content-empty"><h3>No related email</h3><p>Try another customer name or search term.</p></div>
     }
   </section>
 }

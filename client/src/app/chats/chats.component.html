@@ -1,16 +1,15 @@
 @if (this.data) {
-  <section>
-    <h2>Chats</h2>
-    <div class="scroller">
+  <section class="related-section">
+    <h2>Teams</h2>
+    <div class="scroller content-list">
       @if (featureFlags.teamsEnabled) {
-        <button mat-stroked-button color="primary" (click)="openDialog()">New Teams Chat</button>
-        <br /><br />
+        <button mat-stroked-button class="content-create-action" (click)="openDialog()">New Teams message</button>
       }
       
       @if (this.data.length) {
         <div>
           @for (chatMessage of this.data;track chatMessage.id) {
-            <mat-card>
+            <mat-card appearance="outlined" class="content-item">
               <mat-card-header>
                 <mat-card-title>{{ chatMessage.summary }}</mat-card-title>
               </mat-card-header>
@@ -24,9 +23,7 @@
     </div>
 
     @if (!this.data.length) {
-      <div>
-        <h3>No chat messages found</h3>
-      </div>
+      <div class="content-empty"><h3>No related Teams messages</h3><p>Try another customer name or search term.</p></div>
     }
   </section>
 }

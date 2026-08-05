@@ -48,9 +48,7 @@ export class DataService {
       );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateSql(prompt: string): Observable<any> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.http.post<any>(this.apiUrl + 'generateSql', { prompt })
       .pipe(
         catchError(this.handleError)
@@ -77,11 +75,9 @@ export class DataService {
       );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   filter(val: string, data: any[]) {
     if (val) {
       val = val.toLowerCase();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const filteredData = data.filter((data: any) => {
         for (const property in data) {
           const propValue = data ? data[property].toString().toLowerCase() : '';

@@ -1,17 +1,26 @@
 <app-header (userLoggedIn)="userLoggedIn($event)"></app-header>
 
-<main>
+<main class="app-main">
     @if (this.loggedIn || !this.featureFlags.microsoft365Enabled) {
-        <div>
+        <div class="app-content">
             <app-customers-list (customerSelected)="customerSelected($event)"></app-customers-list>
-            <br />
             <div id="related-content"></div>
         </div>
     }
     @if (!this.loggedIn && this.featureFlags.microsoft365Enabled) {
-        <div>
-            <h2>{{ signInMessage }}</h2>
-        </div>
+        <section class="welcome-panel" aria-labelledby="welcome-title">
+            <div class="welcome-icon" aria-hidden="true">
+                <mat-icon svgIcon="people"></mat-icon>
+            </div>
+            <p class="eyebrow">Customer intelligence workspace</p>
+            <h1 id="welcome-title">Bring customer and Microsoft 365 context together</h1>
+            <p class="welcome-copy">Sign in to explore customer records alongside related files, email, Teams conversations, and calendar events.</p>
+            <button mat-flat-button class="primary-action" type="button" (click)="login()">
+                <mat-icon>login</mat-icon>
+                Sign in with Microsoft
+            </button>
+            <p class="welcome-note">Authentication opens in a secure Microsoft sign-in window.</p>
+        </section>
     }
     <app-overlay [delay]="300">
         <span class="spinner"></span>&nbsp;&nbsp;&nbsp;Working...
