@@ -1,22 +1,69 @@
-<div class="phone-container">
-    <input [(ngModel)]="customerPhoneNumber" 
-        (click)="showDialer()"
-        class="phone-number-input"
-        placeholder="Customer phone number" 
-        title="Customer Phone Number" 
-        #phoneInput>
-    <!-- <app-dialer [visible]="dialerVisible" class="dialer"></app-dialer> -->
-    &nbsp; 
-    <button mat-button class="call-button" (click)="startCall()" [disabled]="inCall"><mat-icon>phone</mat-icon> Call</button>
-    &nbsp;
-    <button mat-button class="hangup-button" (click)="endCall()"><mat-icon>close</mat-icon> {{ inCall ? 'Hang Up' : 'Close' }}</button>
-</div>
-<div class="dialer" [hidden]="!dialerVisible" #dialer>  
-    <div class="dialer-buttons">
-      @for (number of this.numbers;track $index) {
-        <button (click)="addNumber(number)" class="dialer-button">
-          {{ number }}
-        </button>
+<section class="phone-container" aria-labelledby="call-panel-title">
+  <div class="call-panel-heading">
+    <div class="call-panel-icon" aria-hidden="true">
+      @if (initializing) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>phone_in_talk</mat-icon>
       }
     </div>
-</div>
+    <div>
+      <strong id="call-panel-title">Call customer</strong>
+      <span>{{ initializing ? 'Preparing secure calling…' : inCall ? 'Call in progress' : 'Review the number before calling' }}</span>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="call-error" role="alert">{{ error }}</div>
+  }
+
+  <div class="call-controls">
+    <div class="number-entry">
+      <label for="customer-phone-number">Phone number</label>
+      <div class="phone-input-shell">
+        <mat-icon aria-hidden="true">dialpad</mat-icon>
+        <input id="customer-phone-number"
+               [(ngModel)]="customerPhoneNumber"
+               (focus)="showDialer()"
+               (click)="showDialer()"
+               class="phone-number-input"
+               type="tel"
+               inputmode="none"
+               autocomplete="tel"
+               maxlength="20"
+               placeholder="Customer phone number"
+               [attr.aria-expanded]="dialerVisible"
+               aria-controls="customer-number-pad"
+               #phoneInput>
+      </div>
+
+      @if (dialerVisible) {
+        <div id="customer-number-pad" class="dialer" #dialer role="group" aria-label="Number pad">
+          <div class="dialer-buttons">
+            @for (number of numbers; track $index) {
+              @if (number === 'backspace') {
+                <button type="button" (click)="removeNumber()" class="dialer-button" aria-label="Delete previous digit">
+                  <mat-icon>backspace</mat-icon>
+                </button>
+              } @else {
+                <button type="button" (click)="addNumber(number)" class="dialer-button" [disabled]="!number.trim()"
+                        [attr.aria-label]="number.trim() ? 'Enter ' + number : null">
+                  {{ number }}
+                </button>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <button mat-flat-button type="button" class="call-button" (click)="startCall()"
+            [disabled]="initializing || inCall || !customerPhoneNumber.trim()">
+      <mat-icon>phone</mat-icon><span>Call</span>
+    </button>
+    <button mat-flat-button type="button" class="hangup-button" (click)="endCall()">
+      <mat-icon>{{ inCall ? 'call_end' : 'close' }}</mat-icon>
+      <span>{{ inCall ? 'Hang up' : 'Close' }}</span>
+    </button>
+  </div>
+</section>

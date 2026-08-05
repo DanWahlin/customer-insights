@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AcsUser, EmailSmsResponse } from '@shared/interfaces';
 import { ApiUrlService } from './api-url.service';
+import { SKIP_GLOBAL_OVERLAY } from './overlay/overlay-http-context';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +16,9 @@ export class AcsService {
   apiUrl = this.apiUrlService.getApiUrl();
 
   getAcsToken(): Observable<AcsUser> {
-    return this.http.get<AcsUser>(this.apiUrl + 'acstoken')
+    return this.http.get<AcsUser>(this.apiUrl + 'acstoken', {
+      context: new HttpContext().set(SKIP_GLOBAL_OVERLAY, true)
+    })
       .pipe(
         catchError(this.handleError)
       );

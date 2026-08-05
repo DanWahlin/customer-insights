@@ -8,21 +8,24 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../environments/environment';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
     selector: 'app-phone-call',
     templateUrl: './phone-call.component.html',
     styleUrls: ['./phone-call.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, MatButtonModule, MatIconModule]
+    imports: [FormsModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule]
 })
 export class PhoneCallComponent implements OnInit, OnDestroy {
   inCall = false;
+  initializing = false;
+  error = '';
   call: Call | undefined;
   callAgent: CallAgent | undefined;
   fromNumber = environment.ACS_PHONE_NUMBER; // From .env file
   dialerVisible = false;
-  numbers: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '0', ' '];
+  numbers: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '0', 'backspace'];
   cursorPosition = 0;
   subscription = new Subscription();
 
@@ -36,13 +39,30 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     if (environment.ACS_CONNECTION_STRING) {
+      this.initializing = true;
       this.subscription.add(
-        this.acsService.getAcsToken().subscribe(async (user: AcsUser) => {
-          const callClient = new CallClient();
-          const tokenCredential = new AzureCommunicationTokenCredential(user.token);
-          this.callAgent = await callClient.createCallAgent(tokenCredential);
+        this.acsService.getAcsToken().subscribe({
+          next: user => void this.initializeCallAgent(user),
+          error: () => {
+            this.initializing = false;
+            this.error = 'Calling could not be prepared. Close this panel and try again.';
+          }
         })
       );
+    }
+  }
+
+  private async initializeCallAgent(user: AcsUser) {
+    try {
+      const callClient = new CallClient();
+      const tokenCredential = new AzureCommunicationTokenCredential(user.token);
+      this.callAgent = await callClient.createCallAgent(tokenCredential);
+    }
+    catch {
+      this.error = 'Calling could not be prepared. Close this panel and try again.';
+    }
+    finally {
+      this.initializing = false;
     }
   }
 
@@ -52,15 +72,30 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   }
 
   addNumber(num: string): void {
-    if (this.phoneInput?.nativeElement.value.length < 12) { // +1231231234 - US phone number format
+    if (num.trim() && this.phoneInput?.nativeElement.value.length < 20) {
       const position = this.cursorPosition !== undefined ? this.cursorPosition : this.customerPhoneNumber.length;
       this.customerPhoneNumber = this.customerPhoneNumber.slice(0, position) + num + this.customerPhoneNumber.slice(position);
       this.cursorPosition += 1;
     }
   }
 
+  removeNumber(): void {
+    const position = this.cursorPosition || this.customerPhoneNumber.length;
+    if (position < 1) return;
+
+    this.customerPhoneNumber = this.customerPhoneNumber.slice(0, position - 1) + this.customerPhoneNumber.slice(position);
+    this.cursorPosition = position - 1;
+  }
+
   startCall() {
-    this.call = this.callAgent?.startCall(
+    this.dialerVisible = false;
+    if (!this.callAgent || !this.customerPhoneNumber.trim()) {
+      this.error = 'Calling is not ready yet.';
+      return;
+    }
+
+    this.error = '';
+    this.call = this.callAgent.startCall(
       [{ phoneNumber: this.customerPhoneNumber }], {
       alternateCallerId: { phoneNumber: this.fromNumber }
     });
@@ -79,6 +114,7 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   }
 
   endCall() {
+    this.dialerVisible = false;
     if (this.call) {
       this.call.hangUp({ forEveryone: true });
       this.call = undefined;
