@@ -1,177 +1,194 @@
-# OpenAI, Azure Communication Services, Foundry IQ, and Microsoft Graph LOB Sample
+# Customer Insights with Microsoft Graph, Foundry IQ, and ACS
 
-This sample shows how a line-of-business application can combine current Microsoft AI, communication, and organizational-data services without forcing users to switch between Outlook, Teams, OneDrive, and separate customer systems.
+This sample combines customer data with Microsoft 365 context, grounded document answers, generative AI, and customer communications. The Angular client, Express API, and PostgreSQL database run locally. Azure supplies the AI, search, and communication capabilities.
 
-- **Microsoft Foundry and Foundry IQ** ground customer-document answers through an Azure AI Search knowledge base. The Node server generates the final answer with the OpenAI-compatible Responses API and returns source citations.
-- **Generative AI** converts natural language into parameterized PostgreSQL `SELECT` statements and drafts email and SMS messages.
-- **Azure Communication Services (ACS)** provides browser calling, SMS, and email delivery.
-- **Microsoft Graph** supplies permission-aware files, email, calendar events, Teams chats, and channel posting through direct Graph calls and MSAL Browser. Microsoft Graph Toolkit is not used.
+The sample is based on the [original Microsoft Learn tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph), but its implementation has been modernized:
 
-The [original Microsoft Learn tutorial](https://learn.microsoft.com/microsoft-cloud/dev/tutorials/openai-acs-msgraph) explains the initial scenarios. This repository now uses a newer authentication, Graph, Foundry, Search, and OpenAI architecture.
+- Angular 22 and Express 5
+- Direct MSAL Browser and Microsoft Graph Client calls instead of the deprecated Microsoft Graph Toolkit
+- A native account menu with the signed-in user's name, email, and sign-out action
+- Microsoft Foundry models and Foundry IQ instead of Azure OpenAI On Your Data
+- Azure AI Search Free for the proof-of-concept document index and knowledge base
+- PostgreSQL-backed natural-language queries with read-only generated SQL execution
+- Local progress states for document answers and generated email/SMS drafts
+
+## What the app demonstrates
+
+| Area | Capability |
+| --- | --- |
+| Customer data | Browse seeded PostgreSQL customer and order data; generate a parameterized read-only query from natural language. |
+| Microsoft Graph | Search files, mail, calendar events, and Teams messages; post to an explicitly configured Teams channel. |
+| Foundry IQ | Ask questions over the repository's customer documents and receive grounded answers with citations. |
+| Generative AI | Generate SQL plus customer-specific email and SMS drafts with `gpt-5-mini`. |
+| Azure Communication Services | Create browser calling identities and send approved email or SMS messages to server-configured test destinations. |
 
 ## Architecture
 
 ```text
-Angular 22
-  ├─ MSAL Browser → Microsoft Graph
-  ├─ ACS Calling SDK → Azure Communication Services
-  └─ Express 5 API
-       ├─ Foundry IQ → Azure AI Search Free knowledge base
-       │    └─ gpt-5-mini Responses API → grounded answer + citations
-       ├─ gpt-5-mini → SQL and message generation
-       ├─ PostgreSQL
-       └─ ACS Email and SMS SDKs
+Local browser
+  └─ Angular 22
+      ├─ MSAL Browser → Microsoft Graph delegated APIs
+      ├─ ACS Calling SDK → Azure Communication Services
+      └─ Local Express 5 API
+          ├─ Foundry IQ → Azure AI Search Free
+          │   └─ gpt-5-mini → grounded answer and citations
+          ├─ gpt-5-mini → SQL and email/SMS drafts
+          ├─ text-embedding-3-small → document indexing
+          ├─ Local PostgreSQL 18
+          └─ ACS Email and SMS SDKs
 ```
 
-Foundry IQ uses the generally available Azure AI Search `2026-04-01` knowledge-base API in extractive mode. The server, not Search, calls `gpt-5-mini` for answer generation. This allows the demo to use the Search Free SKU without requiring a Search managed identity.
+The browser receives only public configuration and delegated Microsoft Graph tokens. AI, Search, database, and ACS credentials stay in the local Express process.
 
 ## Prerequisites
 
-- Node.js 24.15 or later and npm
+### Local application
+
+- Node.js 24.15 or later
+- npm
 - Git
-- Docker, Podman, or another OCI-compatible container runtime
-- Azure CLI authenticated to the target subscription
-- Azure subscription
-- Microsoft 365 tenant with sample files, mail, calendar events, and Teams messages
+- Docker, Podman, or another Compose-compatible container runtime for PostgreSQL
+- A Microsoft 365 tenant for the Graph scenarios
 
-## Environment
+### Azure dependency deployment
 
-Copy `.env.example` to `.env` at the repository root. `.env` is ignored by Git.
+These tools are needed only when provisioning or updating Foundry and Search:
 
-```dotenv
-ENTRAID_CLIENT_ID=
-ENTRAID_TENANT_ID=
-TEAM_ID=
-CHANNEL_ID=
-AI_API_KEY=
-AI_ENDPOINT=
-AI_MODEL=gpt-5-mini
-AI_EMBEDDING_MODEL=text-embedding-3-small
-AZURE_AI_SEARCH_ENDPOINT=
-AZURE_AI_SEARCH_KEY=
-AZURE_AI_SEARCH_INDEX=customer-documents-index
-AZURE_AI_SEARCH_KNOWLEDGE_SOURCE=customer-documents-ks
-AZURE_AI_SEARCH_KNOWLEDGE_BASE=customer-documents-kb
-DOCUMENT_REPOSITORY_URL=https://github.com/DanWahlin/openai-acs-msgraph/blob/main/
-POSTGRES_USER=web
-POSTGRES_PASSWORD=web-password
-POSTGRES_HOST=localhost
-POSTGRES_DATABASE=CustomersDB
-POSTGRES_PORT=5432
-ACS_CONNECTION_STRING=
-ACS_PHONE_NUMBER=
-ACS_EMAIL_ADDRESS=
-CUSTOMER_EMAIL_ADDRESS=
-CUSTOMER_PHONE_NUMBER=
-API_PORT=3000
-API_HOST=127.0.0.1
-CLIENT_ORIGIN=http://localhost:4200
-```
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+- [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- An Azure subscription with model quota in the selected region
 
-Keep keys and connection strings server-side. The Angular environment generator emits feature booleans, not AI, Search, or ACS secrets.
+The `azd` project does **not** deploy Angular, Express, PostgreSQL, Entra ID, or Azure Communication Services. Those remain local or separately managed.
 
-## Provision Microsoft Foundry and Azure AI Search
+## Configure the environment
 
-The deployed demo uses one region for every new resource:
-
-- Resource group: `rg_ai_acs_orgdata`
-- Region: South Central US
-- Foundry resource: Azure AI Services `S0` (model calls are consumption billed)
-- Foundry project: `proj-ai-acs-orgdata`
-- Azure AI Search: Free with the free Foundry IQ retrieval plan
-
-Resource names must be globally unique. Choose a lowercase suffix before running these commands.
+Copy the template from the repository root:
 
 ```bash
-RG=rg_ai_acs_orgdata
-LOCATION=southcentralus
-SUFFIX=<unique-lowercase-suffix>
-AI_ACCOUNT=ai-acs-orgdata-$SUFFIX
-SEARCH_SERVICE=srch-ai-acs-orgdata-$SUFFIX
-PROJECT=proj-ai-acs-orgdata
-
-az group create --name "$RG" --location "$LOCATION"
-
-az cognitiveservices account create \
-  --name "$AI_ACCOUNT" \
-  --resource-group "$RG" \
-  --kind AIServices \
-  --sku S0 \
-  --location "$LOCATION" \
-  --custom-domain "$AI_ACCOUNT" \
-  --assign-identity \
-  --allow-project-management true \
-  --yes
-
-az cognitiveservices account project create \
-  --name "$AI_ACCOUNT" \
-  --resource-group "$RG" \
-  --project-name "$PROJECT" \
-  --location "$LOCATION" \
-  --display-name "AI ACS Org Data" \
-  --assign-identity
-
-az cognitiveservices account deployment create \
-  --resource-group "$RG" \
-  --name "$AI_ACCOUNT" \
-  --deployment-name gpt-5-mini \
-  --model-name gpt-5-mini \
-  --model-version 2025-08-07 \
-  --model-format OpenAI \
-  --sku-name GlobalStandard \
-  --sku-capacity 10
-
-az cognitiveservices account deployment create \
-  --resource-group "$RG" \
-  --name "$AI_ACCOUNT" \
-  --deployment-name text-embedding-3-small \
-  --model-name text-embedding-3-small \
-  --model-version 1 \
-  --model-format OpenAI \
-  --sku-name GlobalStandard \
-  --sku-capacity 120
-
-az search service create \
-  --name "$SEARCH_SERVICE" \
-  --resource-group "$RG" \
-  --location "$LOCATION" \
-  --sku free \
-  --knowledge-retrieval free \
-  --auth-options aadOrApiKey \
-  --aad-auth-failure-mode http401WithBearerChallenge \
-  --public-network-access enabled
+cp .env.example .env
 ```
 
-Set `AI_*` and `AZURE_AI_SEARCH_*` in `.env` from the created resources. Set `DOCUMENT_REPOSITORY_URL` to the branch containing the indexed sample documents. Do not paste keys into source files.
+`.env` and `.azure/` are ignored by Git. Keep `.env` private; it contains credentials.
 
-### Create and populate Foundry IQ
+| Variable | Purpose |
+| --- | --- |
+| `ENTRAID_CLIENT_ID`, `ENTRAID_TENANT_ID` | SPA registration and tenant used by MSAL Browser. |
+| `TEAM_ID`, `CHANNEL_ID` | Optional destination for Teams channel posting. |
+| `AI_API_KEY`, `AI_ENDPOINT` | Azure AI Services key and OpenAI-compatible endpoint. |
+| `AI_MODEL`, `AI_EMBEDDING_MODEL` | Deployment names. Defaults are `gpt-5-mini` and `text-embedding-3-small`. |
+| `AZURE_AI_SEARCH_*` | Search endpoint, admin key, index, knowledge source, and knowledge base names. |
+| `DOCUMENT_REPOSITORY_URL` | Base URL used for document citation links. |
+| `POSTGRES_*` | Local PostgreSQL connection and Compose settings. |
+| `ACS_CONNECTION_STRING`, `ACS_PHONE_NUMBER`, `ACS_EMAIL_ADDRESS` | ACS resource configuration. |
+| `CUSTOMER_EMAIL_ADDRESS`, `CUSTOMER_PHONE_NUMBER` | Deliberate server-side test destinations for sends. |
+| `API_HOST`, `API_PORT`, `CLIENT_ORIGIN`, `NG_APP_API_URL` | Local API binding, CORS origin, and browser API URL. |
 
-From `server/typescript`:
+The Angular environment generator derives feature flags from these values. It never writes AI, Search, database, or ACS credentials into the browser bundle.
+
+## Provision Foundry and Search with azd
+
+The checked-in Bicep creates only these Azure dependencies:
+
+- Azure AI Services `S0` account with a system-assigned identity
+- Microsoft Foundry project
+- `gpt-5-mini` Global Standard deployment
+- `text-embedding-3-small` Global Standard deployment
+- Azure AI Search Free with free semantic and knowledge-retrieval plans
+
+Model deployment capacity is throughput quota, not reserved monthly capacity. Model and embedding usage is consumption billed. Search Free has proof-of-concept limits and no SLA. A subscription can have only one Free Search service.
+
+### Create a fresh environment
+
+From the repository root:
 
 ```bash
-npm install
+az login
+azd auth login
+azd env new talk
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+azd env set AZURE_LOCATION southcentralus
+node scripts/prepare-azd-env.mjs
+azd provision --preview
+azd up
+```
+
+`prepare-azd-env.mjs` creates deterministic, globally unique AI and Search names. You can override any generated value before `azd up`:
+
+```bash
+azd env set AZURE_RESOURCE_GROUP <dedicated-resource-group>
+azd env set AI_ACCOUNT_NAME <globally-unique-ai-account>
+azd env set AI_PROJECT_NAME <project-name>
+azd env set AZURE_AI_SEARCH_SERVICE_NAME <globally-unique-search-name>
+```
+
+`azd up` provisions infrastructure only because the application remains local.
+
+Verify the resulting names with `azd env get-values`, then inspect the resources:
+
+```bash
+az cognitiveservices account deployment list --resource-group <resource-group> --name <ai-account> --output table
+az cognitiveservices account project show --resource-group <resource-group> --name <ai-account> --project-name <project-name>
+az search service show --resource-group <resource-group> --name <search-service>
+```
+
+Both model deployments and the project must report `Succeeded`; Search must report `running` with SKU `free`.
+
+### Adopt the existing talk resources
+
+Set the exact existing resource group and resource names before running the preview. Do this only for resources dedicated to this sample:
+
+```bash
+azd env set AZURE_RESOURCE_GROUP <existing-resource-group>
+azd env set AI_ACCOUNT_NAME <existing-ai-account>
+azd env set AI_PROJECT_NAME <existing-project>
+azd env set AZURE_AI_SEARCH_SERVICE_NAME <existing-search-service>
+azd provision --preview
+```
+
+Review the preview before applying it. Never point this template at an unrelated resource group.
+
+### Copy provisioned settings into `.env`
+
+After `azd up` or `azd provision` succeeds:
+
+```bash
+node scripts/configure-local-env.mjs
+```
+
+The script retrieves the AI and Search keys through Azure CLI, updates only the related entries in the ignored root `.env`, enforces file mode `0600`, and does not print secret values.
+
+### Build the Foundry IQ index
+
+Provisioning creates the Azure resources but does not upload the repository documents. From `server/typescript`:
+
+```bash
+npm ci
 npm run setup:foundry-iq
 ```
 
-The setup command is repeatable. It:
+The repeatable setup command:
 
-1. Extracts the repository's DOCX and XLSX customer documents.
-2. Splits them into overlapping chunks.
-3. Generates 1,536-dimension vectors with `text-embedding-3-small`.
-4. Creates or updates the Search index.
-5. Uploads the chunks and vectors.
-6. Creates the Foundry IQ `searchIndex` knowledge source and knowledge base.
-7. Runs a live retrieval and verifies that Foundry IQ returns references.
+1. Extracts text from the sample DOCX and XLSX files.
+2. Skips the intentionally empty workbook.
+3. Splits the content into overlapping chunks.
+4. Generates 1,536-dimension embeddings.
+5. Creates or updates the Search index, knowledge source, and knowledge base.
+6. Removes stale chunks and uploads the current corpus.
+7. Performs a live retrieval and requires at least one reference.
 
-The Free SKU is intended for a small proof of concept. It has limited storage, indexes, knowledge sources, knowledge bases, throughput, and no SLA. Model embedding and generation tokens are billed separately.
+## Configure Microsoft Entra ID and Graph
 
-## Configure Microsoft Graph
+Create or reuse an Entra app registration with the **Single-page application** platform.
 
-Create a single-page application registration in Microsoft Entra ID with `http://localhost:4200` as an SPA redirect URI. Put its application client ID in `ENTRAID_CLIENT_ID`. For a single-tenant registration, also set `ENTRAID_TENANT_ID` to the tenant ID. Leave it empty only for a multitenant registration that should use the `organizations` authority.
+For local development, add this exact SPA redirect URI:
 
-Browsers treat `http://localhost` as a secure-context exception, so local MSAL development does not require HTTPS. Any non-localhost address, including a LAN IP or Tailscale hostname, must use HTTPS for Web Crypto and must be added as an exact SPA redirect URI in the app registration. For the private test host used by this repository, that redirect is `https://ubuntu-32gb-danwahlin.tailc0c02a.ts.net:9443`.
+```text
+http://localhost:4200
+```
 
-Add these delegated Microsoft Graph permissions and grant tenant admin consent where required:
+`http://localhost` is a browser secure-context exception. Any non-localhost origin, including a LAN or Tailscale hostname, must use HTTPS and must be added as its own exact SPA redirect URI.
+
+Add these delegated Microsoft Graph permissions and grant consent where required:
 
 - `User.Read`
 - `Files.Read.All`
@@ -181,73 +198,154 @@ Add these delegated Microsoft Graph permissions and grant tenant admin consent w
 - `ChannelMessage.Read.All`
 - `ChannelMessage.Send`
 
-`TEAM_ID` and `CHANNEL_ID` are optional. They enable posting a message to a configured Teams channel.
+The client uses direct Graph calls. Cached startup is silent-only, and interactive authentication starts only after the user selects **Sign in**. MSAL Browser 5 popup callbacks use its redirect bridge so the authentication popup returns the result to the main window and closes instead of booting a second copy of the app.
 
-The client uses direct Microsoft Graph API calls for files, mail, calendar events, Teams messages, and channel posting. Cached startup uses silent token acquisition; interactive authentication occurs only after the user selects **Sign in**.
+`TEAM_ID` and `CHANNEL_ID` are optional. Both are required before the channel-posting feature is enabled.
 
 ## Configure Azure Communication Services
 
-Configure an ACS resource with:
+Use an existing ACS resource configured with the capabilities you want to demonstrate:
 
-- A phone number with outbound calling and inbound/outbound SMS
+- A phone number for calling and SMS
 - A connected email domain and sender address
-- The ACS connection string
+- An ACS connection string
 
-Add those values to `ACS_CONNECTION_STRING`, `ACS_PHONE_NUMBER`, and `ACS_EMAIL_ADDRESS`. Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate test destinations before enabling sends. The server ignores destinations supplied by the browser and sends only to these configured addresses. Communication and AI endpoints are rate-limited, and the API binds to loopback by default. If you expose the API through Codespaces or another proxy, keep the forwarded port private and add deployment-grade authentication before treating the sample as a hosted application.
+Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate test destinations. The API ignores browser-supplied destinations and sends only to these server-configured values.
 
-The server waits for the real ACS email operation result and checks each SMS result. It does not return fabricated send success.
+Calling identity/token creation does not contact a customer. Email and SMS actions do contact real recipients and can incur charges, so run them only with explicit test destinations. Phone-number rental and communication usage are billed through the separately managed ACS resource.
 
-## Run the application
+## Run locally
 
-Start PostgreSQL from the repository root:
-
-```bash
-docker compose up -d
-```
-
-If port `5432` is already in use, set `POSTGRES_PORT` in `.env` to another local port, such as `5435`; Docker Compose and the server use the same setting. PostgreSQL is pinned to version 18 and uses the versioned `postgres-data-v18` volume. If you have data from an older sample image, migrate it with `pg_dump`/`pg_restore` rather than mounting an older major-version data directory directly.
-
-Start the server:
+### 1. Install dependencies
 
 ```bash
 cd server/typescript
-npm install
-npm test
+npm ci
+cd ../../client
+npm ci
+cd ..
+```
+
+### 2. Start PostgreSQL
+
+From the repository root:
+
+```bash
+docker compose up -d
+docker compose exec postgresDb sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+PostgreSQL 18 listens only on loopback. If local port `5432` is occupied, change `POSTGRES_PORT` in `.env`; Compose and the API use the same value.
+
+The API creates the schema, read-only generated-query role, and four sample customers during startup. Initialization is transactional, idempotent, and protected by a PostgreSQL advisory lock.
+
+Do not mount a data directory from an older PostgreSQL major version. Use `pg_dump` and `pg_restore` when migrating existing data.
+
+### 3. Start the API
+
+In one terminal:
+
+```bash
+cd server/typescript
 npm run dev
 ```
 
-For a production-style server start, run `npm run build` followed by `npm start`; production startup uses compiled JavaScript and does not require development dependencies.
-
-Start the client in another terminal:
+Verify readiness:
 
 ```bash
-cd client
-npm install
+curl http://localhost:3000/api/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+For a production-style local run:
+
+```bash
+npm run build
 npm start
 ```
 
-Open `http://localhost:4200`.
+### 4. Start Angular
+
+In another terminal:
+
+```bash
+cd client
+npm start
+```
+
+Open [http://localhost:4200](http://localhost:4200), sign in, and select a customer.
+
+### Stop local services
+
+Stop Angular and the API with `Ctrl+C`, then stop PostgreSQL:
+
+```bash
+docker compose down
+```
+
+The named database volume remains. `docker compose down -v` permanently deletes the local database volume.
 
 ## Verification
+
+Run the deterministic checks from the repository root:
 
 ```bash
 cd server/typescript
 npm test
 npm run build
 npm audit
-npm run setup:foundry-iq
 
 cd ../../client
 npm run build
-npm audit --omit=dev
+npm audit
+
+cd ..
+az bicep build --file infra/main.bicep
+node --check scripts/run-cli.mjs
+node --check scripts/prepare-azd-env.mjs
+node --check scripts/configure-local-env.mjs
+git diff --check
 ```
 
-Live Microsoft Graph verification requires an interactive tenant sign-in. Email and SMS tests contact real recipients and should only be run with deliberate test destinations.
+Tenant-dependent smoke tests still require interactive sign-in:
+
+- Account menu and refresh persistence
+- Files, mail, calendar, and Teams retrieval
+- Teams channel posting
+- ACS calling
+- Foundry IQ citations
+
+Email and SMS verification is intentionally separate because it contacts real recipients.
+
+## Cost and cleanup
+
+For the checked-in Azure dependency template:
+
+- Azure AI Search Free: no standing monthly charge
+- Foundry project: no separate standing charge
+- Azure AI Services `S0`: no base charge; model and embedding tokens are pay-as-you-go
+- Global Standard capacities: throughput quotas, not reserved capacity
+
+The separately managed ACS phone number can have a monthly rental charge, and calls, SMS, and email are usage billed. The locally hosted Angular, Express, and PostgreSQL processes add no Azure hosting charge.
+
+To delete a **dedicated azd test environment**, first record the selected group:
+
+```bash
+azd env get-value AZURE_RESOURCE_GROUP
+azd down --force --purge
+az group exists --subscription <subscription-id> --name <recorded-resource-group>
+azd env remove <environment-name> --force
+```
+
+The `az group exists` command must return `false`. Do not run `azd down` against a shared or manually managed resource group.
 
 ## Foundry IQ and Work IQ
 
-Foundry IQ is the right knowledge system for the existing customer-document assistant because the data is owned and indexed by this application. Microsoft Graph remains the right deterministic API for the current user's files, mail, calendar, and Teams operations.
+Foundry IQ is the right fit for the current document assistant because the application owns and indexes that corpus. Microsoft Graph remains the deterministic API for explicit files, mail, calendar, and Teams views and actions.
 
-Work IQ would add value only for a separate, permission-aware **customer meeting brief** that synthesizes recent email, Teams discussions, meetings, and documents for the selected customer. It is not required for document chat and should not replace the explicit Graph views or actions in this sample.
-
-That pilot is intentionally deferred because it requires tenant-wide Global Administrator enablement, a usage-based Copilot Studio billing plan, admin consent for the broad delegated `WorkIQAgent.Ask` permission, and a confidential server/OBO authentication flow. If enabled later, keep it feature-flagged and read-only: one **Generate Work IQ brief** action, no generic chat, no write tools, and no duplication of Foundry IQ data.
+A useful future Work IQ feature would be a selected-customer meeting brief that synthesizes recent mail, meetings, Teams discussions, and tenant documents with citations. It is intentionally deferred because it adds tenant enablement, broad delegated permission, billing, and confidential server/OBO requirements while duplicating little of the current deterministic UI.

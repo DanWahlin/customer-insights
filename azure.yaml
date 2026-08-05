@@ -1,0 +1,7 @@
+name: openai-acs-msgraph
+metadata:
+  template: openai-acs-msgraph@1.0.0
+infra:
+  provider: bicep
+  path: infra
+  module: main
