@@ -64,15 +64,13 @@ export const requireAccessAsUser: RequestHandler = (req, res, next): void => {
 export const requireApiAuthentication: RequestHandler[] = [requireBearerHeader, validateAccessToken, requireAccessAsUser];
 
 export function handleAuthenticationError(error: unknown, _req: Request, res: Response, next: NextFunction): void {
-  const authError = error as { status?: number; headers?: Record<string, string>; message?: string };
-  const isClaimValidationError = authError instanceof Error && /^Unexpected '(tid|azp)' value$/.test(authError.message);
-  if (authError?.status !== 400 && authError?.status !== 401 && !isClaimValidationError) {
+  const authError = error as { status?: number; headers?: Record<string, string> };
+  if (authError?.status !== 400 && authError?.status !== 401) {
     next(error);
     return;
   }
 
-  const challenge = (error as { headers?: Record<string, string> }).headers?.['WWW-Authenticate'] ??
-    (error as { headers?: Record<string, string> }).headers?.['www-authenticate'];
+  const challenge = authError.headers?.['WWW-Authenticate'] ?? authError.headers?.['www-authenticate'];
   if (challenge) res.setHeader('WWW-Authenticate', challenge);
   res.status(401).json({ error: 'A valid Microsoft Entra access token is required.' });
 }

@@ -91,20 +91,18 @@ test('requireBearerHeader rejects missing and alternate token transports', () =>
   }
 });
 
-test('handleAuthenticationError normalizes configured claim mismatches to 401', () => {
-  for (const claim of ['tid', 'azp']) {
-    let nextCalled = false;
-    const result = createResponse();
-    handleAuthenticationError(
-      new Error(`Unexpected '${claim}' value`),
-      {} as Request,
-      result.response,
-      () => { nextCalled = true; }
-    );
-    assert.equal(result.statusCode, 401);
-    assert.deepEqual(result.body, { error: 'A valid Microsoft Entra access token is required.' });
-    assert.equal(nextCalled, false);
-  }
+test('handleAuthenticationError normalizes library auth errors and preserves the challenge', () => {
+  const result = createResponse();
+  const challenge = 'Bearer realm="api", error="invalid_token"';
+  handleAuthenticationError(
+    { status: 401, headers: { 'WWW-Authenticate': challenge } },
+    {} as Request,
+    result.response,
+    () => assert.fail('Authentication error should not propagate')
+  );
+  assert.equal(result.statusCode, 401);
+  assert.deepEqual(result.body, { error: 'A valid Microsoft Entra access token is required.' });
+  assert.equal(result.headers.get('www-authenticate'), challenge);
 });
 
 test('handleAuthenticationError passes unrelated server failures through', () => {
