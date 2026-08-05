@@ -16,6 +16,51 @@ app-customers-list {
   width: 100%;
 }
 
+.related-content-region {
+  min-width: 0;
+  scroll-margin-top: 88px;
+}
+
+.related-loading,
+.related-load-error {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.related-loading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 24px;
+  color: var(--primary-strong);
+}
+
+.related-loading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.related-loading strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.related-loading span {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.related-load-error {
+  padding: 16px 18px;
+  border-color: #f0b7b2;
+  background: #fff5f4;
+  color: var(--danger);
+}
+
 .welcome-panel {
   width: min(100%, 720px);
   margin: 72px auto 0;
@@ -92,5 +137,10 @@ app-customers-list {
   .welcome-panel {
     margin-top: 24px;
     padding: 36px 24px;
+  }
+
+  .related-loading {
+    align-items: flex-start;
+    padding: 18px;
   }
 }

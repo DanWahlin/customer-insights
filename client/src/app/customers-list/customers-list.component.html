@@ -114,8 +114,9 @@
 <ng-template #customerActions let-row>
     <div class="action-group">
         @if (headers.includes('company') && featureFlags.microsoft365Enabled) {
-            <button mat-flat-button class="primary-action related-action" type="button" (click)="getRelatedData(row)">
-                <mat-icon>folder_shared</mat-icon>
+            <button mat-flat-button class="primary-action related-action" type="button" (click)="getRelatedData(row)"
+                    [attr.aria-label]="'Open Microsoft 365 workspace for ' + row.company">
+                <mat-icon aria-hidden="true">folder</mat-icon>
                 <span>Open workspace</span>
             </button>
         }

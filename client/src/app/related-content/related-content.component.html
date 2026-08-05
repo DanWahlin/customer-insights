@@ -19,6 +19,9 @@
             </div>
 
             <mat-card-content>
+                @if (error) {
+                    <div class="workspace-error" role="alert">{{ error }}</div>
+                }
                 <mat-tab-group [animationDuration]="'0ms'" mat-stretch-tabs="false" preserveContent="true" class="content-tabs">
                     <mat-tab #files aria-label="Files">
                         <ng-template mat-tab-label>
@@ -43,10 +46,10 @@
                 </mat-tab-group>
 
                 <div class="tab-content">
-                    <app-files [hidden]="!files.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('files', $event)" />
-                    <app-chats [hidden]="!chats.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('chats', $event)" />
-                    <app-emails [hidden]="!emails.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('emails', $event)" />
-                    <app-calendar-events [hidden]="!calendarEvents.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('agendaEvents', $event)" />
+                    <app-files [hidden]="!files.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('files', $event)" (loadError)="loadFailed('files', $event)" />
+                    <app-chats [hidden]="!chats.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('chats', $event)" (loadError)="loadFailed('chats', $event)" />
+                    <app-emails [hidden]="!emails.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('emails', $event)" (loadError)="loadFailed('emails', $event)" />
+                    <app-calendar-events [hidden]="!calendarEvents.isActive" [searchText]="selectedQueryText" (dataLoaded)="dataLoaded('agendaEvents', $event)" (loadError)="loadFailed('agendaEvents', $event)" />
                 </div>
             </mat-card-content>
         </mat-card>

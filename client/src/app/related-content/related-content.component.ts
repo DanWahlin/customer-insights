@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconRegistry, MatIconModule } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Customer } from '@shared/interfaces';
@@ -32,6 +32,7 @@ export class RelatedContentComponent {
 
   closed = true;
   selectedQueryText = '';
+  private settledContent = new Set<ContentCountType>();
   contentCounts: ContentCounts = {
     files: 0,
     emails: 0,
@@ -40,10 +41,15 @@ export class RelatedContentComponent {
   };
 
   customer: Customer | null = null;
+  error = '';
+  @Output() contentLoaded = new EventEmitter<string>();
   @Input()
   set selectedCustomer(value: Customer | null) {
     this.customer = value;
     this.closed = false;
+    this.error = '';
+    this.settledContent.clear();
+    this.contentCounts = { files: 0, emails: 0, chats: 0, agendaEvents: 0 };
     if (value) {
       this.selectedQueryText = value.company;
     }
@@ -57,6 +63,19 @@ export class RelatedContentComponent {
 
   dataLoaded(type: ContentCountType, data: any) {
     this.contentCounts[type] = data.length;
+    this.markContentSettled(type);
+  }
+
+  loadFailed(type: ContentCountType, message: string) {
+    this.error = message;
+    this.markContentSettled(type);
+  }
+
+  private markContentSettled(type: ContentCountType) {
+    this.settledContent.add(type);
+    if (this.settledContent.size === 4) {
+      this.contentLoaded.emit(this.customer?.company ?? '');
+    }
   }
 
   closeCard() {

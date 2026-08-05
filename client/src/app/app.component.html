@@ -4,7 +4,22 @@
     @if (this.loggedIn || !this.featureFlags.microsoft365Enabled) {
         <div class="app-content">
             <app-customers-list (customerSelected)="customerSelected($event)"></app-customers-list>
-            <div id="related-content"></div>
+            <section id="related-content-region" class="related-content-region"
+                     [attr.aria-busy]="relatedContentLoading" aria-live="polite">
+                @if (relatedContentLoading) {
+                    <div class="related-loading" role="status">
+                        <mat-spinner diameter="32"></mat-spinner>
+                        <div>
+                            <strong>Loading Microsoft 365 workspace</strong>
+                            <span>Finding files, email, Teams messages, and events for {{ selectedCustomer?.company }}…</span>
+                        </div>
+                    </div>
+                }
+                @if (relatedContentLoadError) {
+                    <div class="related-load-error" role="alert">{{ relatedContentLoadError }}</div>
+                }
+                <div id="related-content"></div>
+            </section>
         </div>
     }
     @if (!this.loggedIn && this.featureFlags.microsoft365Enabled) {

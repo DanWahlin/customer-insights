@@ -82,6 +82,17 @@ mat-card-content {
   margin-top: 4px;
 }
 
+.workspace-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #f0b7b2;
+  border-radius: var(--radius-sm);
+  background: #fff5f4;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .tab-label {
   display: inline-flex;
   align-items: center;

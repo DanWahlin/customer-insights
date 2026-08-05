@@ -183,9 +183,20 @@
 }
 
 .related-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 38px;
   border-radius: 19px;
   white-space: nowrap;
+}
+
+.related-action mat-icon {
+  width: 20px;
+  height: 20px;
+  margin: 0 8px 0 0;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .contact-action {
@@ -357,9 +368,16 @@
   }
 
   .customer-card .related-action {
-    min-width: 40px;
-    width: 40px;
+    min-width: 44px;
+    width: 44px;
+    min-height: 44px;
+    height: 44px;
+    border-radius: 50%;
     padding: 0;
+  }
+
+  .customer-card .related-action mat-icon {
+    margin: 0;
   }
 }
 

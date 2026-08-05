@@ -11,13 +11,16 @@ import { OverlayComponent } from './core/overlay/overlay.component';
 import { RelatedContentComponent } from './related-content/related-content.component';
 import { CustomersListComponent } from './customers-list/customers-list.component';
 import { HeaderComponent } from './header/header.component';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [HeaderComponent, CustomersListComponent, OverlayComponent, RouterOutlet, MatButtonModule, MatIconModule]
+    imports: [HeaderComponent, CustomersListComponent, OverlayComponent, RouterOutlet, MatButtonModule, MatIconModule,
+      MatProgressSpinnerModule]
 })
 export class AppComponent implements OnInit, OnDestroy {
   get loggedIn() {
@@ -26,6 +29,8 @@ export class AppComponent implements OnInit, OnDestroy {
   name = '';
   signInMessage = '';
   selectedCustomer: Customer | null = null;
+  relatedContentLoading = false;
+  relatedContentLoadError = '';
   timer: ReturnType<typeof setTimeout> | null = null;
   iconList = [ 
     { name: 'people', icon: PEOPLE_ICON }, 
@@ -42,6 +47,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ];
   relatedContentComponentRef?: ComponentRef<RelatedContentComponent>;
+  relatedContentSubscription?: Subscription;
 
   injector = inject(EnvironmentInjector);
   appRef = inject(ApplicationRef);
@@ -66,9 +72,17 @@ export class AppComponent implements OnInit, OnDestroy {
     this.timer = setTimeout(() => this.signInMessage = 'Please sign in to continue', 800);
   }
 
-  customerSelected(customer: Customer) {
+  async customerSelected(customer: Customer) {
     this.selectedCustomer = { ...customer };
-    this.loadRelatedContentComponent();
+    this.relatedContentLoading = true;
+    this.relatedContentLoadError = '';
+    try {
+      await this.loadRelatedContentComponent();
+    }
+    catch {
+      this.relatedContentLoading = false;
+      this.relatedContentLoadError = 'The Microsoft 365 workspace could not be opened. Please try again.';
+    }
   }
 
   async loadRelatedContentComponent() {
@@ -79,9 +93,29 @@ export class AppComponent implements OnInit, OnDestroy {
         environmentInjector: this.injector 
       });
       this.appRef.attachView(this.relatedContentComponentRef.hostView);
+      this.relatedContentSubscription = this.relatedContentComponentRef.instance.contentLoaded.subscribe(company => {
+        if (company === this.selectedCustomer?.company) {
+          this.relatedContentLoading = false;
+        }
+      });
     }
 
     this.relatedContentComponentRef.setInput('selectedCustomer', this.selectedCustomer);
+    this.relatedContentComponentRef.changeDetectorRef.detectChanges();
+    this.scrollRelatedContentIntoView();
+  }
+
+  private scrollRelatedContentIntoView() {
+    requestAnimationFrame(() => {
+      const region = document.getElementById('related-content-region');
+      if (!region) return;
+
+      const bounds = region.getBoundingClientRect();
+      const alreadyVisible = bounds.top >= 76 && bounds.top < window.innerHeight * .72;
+      if (!alreadyVisible) {
+        region.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   }
 
   userLoggedIn(user: { displayName?: string | null }) {
@@ -94,6 +128,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.relatedContentSubscription?.unsubscribe();
+    if (this.relatedContentComponentRef) {
+      this.appRef.detachView(this.relatedContentComponentRef.hostView);
+      this.relatedContentComponentRef.destroy();
+    }
     if (this.timer) {
       clearTimeout(this.timer);
     }

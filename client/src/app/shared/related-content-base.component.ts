@@ -13,6 +13,8 @@ export abstract class RelatedContentBaseComponent {
     
     @Output()
     dataLoaded: EventEmitter<any> = new EventEmitter();
+    @Output()
+    loadError = new EventEmitter<string>();
 
     private _data: any[] = [];
     @Input() get data(): any[] {
@@ -40,7 +42,14 @@ export abstract class RelatedContentBaseComponent {
 
     protected async updateWithLatest<T>(loader: () => Promise<T[]>): Promise<void> {
       const generation = ++this.searchGeneration;
-      const results = await loader();
-      if (generation === this.searchGeneration) this.data = results;
+      try {
+        const results = await loader();
+        if (generation === this.searchGeneration) this.data = results;
+      }
+      catch {
+        if (generation === this.searchGeneration) {
+          this.loadError.emit('Microsoft 365 content could not be loaded. Try again or use another search term.');
+        }
+      }
     }
 }
