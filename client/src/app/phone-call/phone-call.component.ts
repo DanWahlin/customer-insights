@@ -29,6 +29,8 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   numbers: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '0', 'backspace'];
   cursorPosition = 0;
   subscription = new Subscription();
+  private destroyed = false;
+  private initializationGeneration = 0;
 
   @Input() customerPhoneNumber = '';
   @Output() hangup = new EventEmitter();
@@ -43,8 +45,11 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
       this.initializing = true;
       this.subscription.add(
         this.acsService.getAcsToken().subscribe({
-          next: user => void this.initializeCallAgent(user),
+          next: user => {
+            if (!this.destroyed) void this.initializeCallAgent(user);
+          },
           error: () => {
+            if (this.destroyed) return;
             this.initializing = false;
             this.error = 'Calling could not be prepared. Close this panel and try again.';
           }
@@ -54,20 +59,28 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   }
 
   private async initializeCallAgent(user: AcsUser) {
+    const generation = ++this.initializationGeneration;
+    const callClient = new CallClient();
     try {
-      const callClient = new CallClient();
-      this.callClient = callClient;
       const tokenCredential = new AzureCommunicationTokenCredential(user.token);
-      this.callAgent = await callClient.createCallAgent(tokenCredential);
+      const callAgent = await callClient.createCallAgent(tokenCredential);
+      if (this.destroyed || generation !== this.initializationGeneration) {
+        await callClient.dispose().catch(() => undefined);
+        return;
+      }
+      this.callClient = callClient;
+      this.callAgent = callAgent;
     }
     catch {
-      const callClient = this.callClient;
-      this.callClient = undefined;
-      if (callClient) void callClient.dispose().catch(() => undefined);
-      this.error = 'Calling could not be prepared. Close this panel and try again.';
+      await callClient.dispose().catch(() => undefined);
+      if (!this.destroyed && generation === this.initializationGeneration) {
+        this.error = 'Calling could not be prepared. Close this panel and try again.';
+      }
     }
     finally {
-      this.initializing = false;
+      if (!this.destroyed && generation === this.initializationGeneration) {
+        this.initializing = false;
+      }
     }
   }
 
@@ -160,6 +173,8 @@ export class PhoneCallComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+    this.initializationGeneration += 1;
     this.subscription.unsubscribe();
     const activeCall = this.call;
     this.call = undefined;

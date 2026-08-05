@@ -33,6 +33,9 @@ export abstract class RelatedContentBaseComponent {
   
     set searchText(value: string) {
       this._searchText = value;
+      // Clear the previous customer's results immediately without emitting a
+      // completion event for the new request.
+      this._data = [];
       //if (value) {
         this.search(value as string);
       //}
