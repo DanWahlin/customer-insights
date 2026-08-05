@@ -24,6 +24,7 @@ const GRAPH_SCOPES = [
   'ChannelMessage.Read.All',
   'ChannelMessage.Send'
 ];
+const API_SCOPE = environment.ENTRAID_API_SCOPE;
 
 @Injectable({
   providedIn: 'root'
@@ -67,6 +68,7 @@ export class GraphService {
     this.initGraphClient();
     try {
       const user = await this.getMe();
+      await this.getApiAccessToken();
       this.currentUserState.set(user);
       this.signedIn.set(true);
       return user;
@@ -91,6 +93,7 @@ export class GraphService {
     this.initGraphClient();
     try {
       const user = await this.getMe();
+      await this.getApiAccessToken();
       this.currentUserState.set(user);
       this.signedIn.set(true);
       return user;
@@ -121,6 +124,14 @@ export class GraphService {
 
   async getMe(): Promise<User> {
     return this.requireGraphClient().api('/me').select('id,displayName,mail,userPrincipalName').get();
+  }
+
+  async getApiAccessToken(): Promise<string> {
+    if (!API_SCOPE) throw new Error('The Customer Insights API scope is not configured.');
+    const msal = this.requireMsal();
+    const account = this.requireAccount(msal.getActiveAccount() ?? msal.getAllAccounts()[0]);
+    const result = await msal.acquireTokenSilent({ account, scopes: [API_SCOPE] });
+    return result.accessToken;
   }
 
   async searchFiles(query: string): Promise<DriveItem[]> {

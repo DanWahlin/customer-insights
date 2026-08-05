@@ -71,6 +71,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   openChatHelp() {
+    if (!this.graphService.isSignedIn()) {
+      return;
+    }
     if (!this.featureFlags.foundryIQEnabled) {
       alert('Document chat is not configured.');
       return;

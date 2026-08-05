@@ -31,6 +31,7 @@ function updateEnvironment(isProd = false) {
     apiUrl: env.NG_APP_API_URL || '',
     ENTRAID_CLIENT_ID: env.ENTRAID_CLIENT_ID || '',
     ENTRAID_TENANT_ID: env.ENTRAID_TENANT_ID || '',
+    ENTRAID_API_SCOPE: env.ENTRAID_API_SCOPE || '',
     TEAM_ID: env.TEAM_ID || '',
     CHANNEL_ID: env.CHANNEL_ID || '',
     TEAMS_ENABLED: !!(env.TEAM_ID && env.CHANNEL_ID),

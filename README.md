@@ -27,7 +27,7 @@ The sample began as a Microsoft Learn tutorial and has since been modernized:
 ```text
 Local browser
   └─ Angular 22
-      ├─ MSAL Browser → Microsoft Graph delegated APIs
+      ├─ MSAL Browser → Microsoft Graph and local API delegated tokens
       ├─ ACS Calling SDK → Azure Communication Services
       └─ Local Express 5 API
           ├─ Foundry IQ → Azure AI Search Free
@@ -38,7 +38,7 @@ Local browser
           └─ ACS Email and SMS SDKs
 ```
 
-The browser receives only public configuration and delegated Microsoft Graph tokens. AI, Search, database, and ACS credentials stay in the local Express process.
+The browser receives only public configuration plus delegated Microsoft Graph and Customer Insights API tokens. AI, Search, database, and ACS credentials stay in the local Express process.
 
 ## Prerequisites
 
@@ -75,6 +75,7 @@ cp .env.example .env
 | Variable | Purpose |
 | --- | --- |
 | `ENTRAID_CLIENT_ID`, `ENTRAID_TENANT_ID` | SPA registration and tenant used by MSAL Browser. |
+| `ENTRAID_API_CLIENT_ID`, `ENTRAID_API_SCOPE` | Protected Express API registration and delegated `access_as_user` scope. |
 | `TEAM_ID`, `CHANNEL_ID` | Optional destination for Teams channel posting. |
 | `AI_API_KEY`, `AI_ENDPOINT` | Azure AI Services key and OpenAI-compatible endpoint. |
 | `AI_MODEL`, `AI_EMBEDDING_MODEL` | Deployment names. Defaults are `gpt-5-mini` and `text-embedding-3-small`. |
@@ -211,6 +212,16 @@ Add these delegated Microsoft Graph permissions and grant consent where required
 
 The client uses direct Graph calls. Cached startup is silent-only, and interactive authentication starts only after the user selects **Sign in**. MSAL Browser 5 popup callbacks use its redirect bridge so the authentication popup returns the result to the main window and closes instead of booting a second copy of the app.
 
+Protect the local Express API with a separate, single-tenant Entra app registration:
+
+1. Set its Application ID URI to `api://<API-client-id>`.
+2. Add and enable an `access_as_user` delegated scope.
+3. Set `api.requestedAccessTokenVersion` to `2` in the API registration manifest.
+4. Add that delegated permission to the SPA registration and grant tenant consent.
+5. Set `ENTRAID_API_CLIENT_ID` to the API registration's Application client ID and `ENTRAID_API_SCOPE` to `api://<API-client-id>/access_as_user`.
+
+No API client secret is required. The SPA silently acquires a separate API token after Microsoft sign-in. Express validates the token signature, v2 issuer, API audience, tenant, expiration, and `access_as_user` scope. `/api/health` remains public; every customer, AI, Foundry IQ, and ACS endpoint requires the delegated token and returns `401` or `403` when authorization fails.
+
 `TEAM_ID` and `CHANNEL_ID` are optional. Both are required before the channel-posting feature is enabled.
 
 ## Configure Azure Communication Services
@@ -225,7 +236,7 @@ Set `CUSTOMER_EMAIL_ADDRESS` and `CUSTOMER_PHONE_NUMBER` to deliberate email and
 
 Calling identity/token creation does not contact a customer. Selecting **Call** does place a real outbound call to the number shown in the editable call field, and the browser VoIP token can place PSTN calls allowed by the ACS resource. Calls, email, and SMS can incur charges, so use deliberate test destinations and keep the API private. Phone-number rental and communication usage are billed through the separately managed ACS resource.
 
-The API is loopback-only by default and applies in-memory rate limits to AI and communication endpoints. This is a local demonstration, not an authenticated hosted API. Do not expose it through a public port or proxy without adding deployment-grade API authentication. Codespace setup explicitly keeps ports 3000, 4200, and 5432 private; do not change their visibility to public. The ACS phone number is public client configuration needed by the calling UI; the ACS connection string remains server-side. Email and SMS handlers wait for real ACS operation results rather than returning fabricated success.
+The API is loopback-only by default, requires a validated delegated Entra token for every business endpoint, and applies in-memory rate limits to AI and communication endpoints. Codespace setup explicitly keeps ports 3000, 4200, and 5432 private; do not change their visibility to public. Authentication does not make this local demonstration a production hosting architecture. The ACS phone number is public client configuration needed by the calling UI; the ACS connection string remains server-side. Email and SMS handlers wait for real ACS operation results rather than returning fabricated success.
 
 ## Run locally
 
@@ -330,6 +341,7 @@ git diff --check
 Tenant-dependent smoke tests still require interactive sign-in:
 
 - Account menu and refresh persistence
+- Delegated Customer Insights API token acquisition and rejection of unsigned API requests
 - Files, mail, calendar, and Teams retrieval
 - Teams channel posting
 - ACS calling

@@ -36,7 +36,7 @@
         <button mat-button type="button" (click)="login()">Sign in</button>
       }
     }
-    @if (this.featureFlags.foundryIQEnabled) {
+    @if (this.featureFlags.foundryIQEnabled && this.graphService.isSignedIn()) {
       <button mat-icon-button type="button" class="chat-help-button" aria-label="Open document assistant"
               (click)="openChatHelp()">
         <mat-icon aria-hidden="true">chat</mat-icon>

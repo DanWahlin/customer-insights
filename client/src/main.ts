@@ -16,6 +16,7 @@ import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
 import { PhonePipe } from '@shared/phone.pipe';
 import { CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { OverlayRequestResponseInterceptor } from '@core/overlay/overlay-request-response.interceptor';
+import { ApiAuthenticationInterceptor } from '@core/api-authentication.interceptor';
 import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge';
 
 function isAuthenticationResponse(): boolean {
@@ -38,6 +39,11 @@ if (isAuthenticationResponse()) {
         {
           provide: HTTP_INTERCEPTORS,
           useClass: OverlayRequestResponseInterceptor,
+          multi: true,
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: ApiAuthenticationInterceptor,
           multi: true,
         }
     ]

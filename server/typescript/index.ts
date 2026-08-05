@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import apiRoutes from './apiRoutes';
 import { initializeDb } from './initDatabase';
+import { handleAuthenticationError, requireApiAuthentication, validateEntraConfiguration } from './entraAuth';
 import './config';
 
 const app = express();
@@ -13,16 +14,18 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:4200')
   .filter(Boolean);
 let databaseReady = false;
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: allowedOrigins, allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: true, limit: '32kb' }));
 
-app.use('/api', apiRoutes);
 app.get('/api/health', (_req, res): void => {
   res.status(databaseReady ? 200 : 503).json({ status: databaseReady ? 'ok' : 'starting' });
 });
+app.use('/api', ...requireApiAuthentication, apiRoutes);
+app.use(handleAuthenticationError);
 
 if (require.main === module) {
+  validateEntraConfiguration();
   initializeDb()
     .then(() => {
       databaseReady = true;
