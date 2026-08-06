@@ -1,12 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { updateEnvironmentText } from '../lib/env-file.mjs';
+import { phoneConfigurationForResource, updateEnvironmentText } from '../lib/env-file.mjs';
 
-test('cloud updates preserve a manually configured ACS phone number and unrelated values', () => {
+test('phone configuration is preserved only for its owning ACS resource', () => {
+  const source = [
+    'ACS_PHONE_NUMBER=+15551234567',
+    'ACS_PHONE_NUMBER_RESOURCE=acs-current'
+  ].join('\n');
+  assert.deepEqual(phoneConfigurationForResource(source, 'acs-current'), {
+    ACS_PHONE_NUMBER: '+15551234567',
+    ACS_PHONE_NUMBER_RESOURCE: 'acs-current'
+  });
+});
+
+test('phone configuration is cleared when the ACS resource changes', () => {
+  const source = [
+    'ACS_PHONE_NUMBER=+15551234567',
+    'ACS_PHONE_NUMBER_RESOURCE=acs-old'
+  ].join('\n');
+  assert.deepEqual(phoneConfigurationForResource(source, 'acs-new'), {
+    ACS_PHONE_NUMBER: '',
+    ACS_PHONE_NUMBER_RESOURCE: 'acs-new'
+  });
+});
+
+test('cloud updates preserve unrelated values', () => {
   const source = [
     '# ACS',
     'ACS_CONNECTION_STRING=old',
-    'ACS_PHONE_NUMBER=+15551234567',
     'CUSTOMER_PHONE_NUMBER=+15557654321',
     ''
   ].join('\n');
@@ -15,7 +36,6 @@ test('cloud updates preserve a manually configured ACS phone number and unrelate
     ACS_EMAIL_ADDRESS: 'donotreply@example.azurecomm.net'
   });
   assert.match(result, /^ACS_CONNECTION_STRING=new$/m);
-  assert.match(result, /^ACS_PHONE_NUMBER=\+15551234567$/m);
   assert.match(result, /^CUSTOMER_PHONE_NUMBER=\+15557654321$/m);
   assert.match(result, /^ACS_EMAIL_ADDRESS=donotreply@example\.azurecomm\.net$/m);
 });

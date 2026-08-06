@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCli } from './run-cli.mjs';
-import { updateEnvironmentText } from './lib/env-file.mjs';
+import { phoneConfigurationForResource, updateEnvironmentText } from './lib/env-file.mjs';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..');
@@ -87,7 +87,8 @@ const updates = {
   ENTRAID_API_CLIENT_ID: entraApiAppId,
   ENTRAID_API_SCOPE: entraApiScope,
   ACS_CONNECTION_STRING: acsConnectionString,
-  ACS_EMAIL_ADDRESS: `donotreply@${senderDomain}`
+  ACS_EMAIL_ADDRESS: `donotreply@${senderDomain}`,
+  ...phoneConfigurationForResource(source, communicationServiceName)
 };
 
 const temporaryPath = `${envPath}.${process.pid}.tmp`;

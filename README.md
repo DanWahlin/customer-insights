@@ -78,6 +78,9 @@ azd provision --preview
 
 **The phone number must belong to the ACS resource created by this azd environment.** PSTN calling and SMS remain disabled until `ACS_PHONE_NUMBER` is configured. Email and VoIP calling do not require a purchased phone number.
 
+`azd up` tracks the owning ACS resource and clears a number when you switch
+environments, preventing it from being used with the wrong ACS connection.
+
 Before testing real sends, set `CUSTOMER_EMAIL_ADDRESS` and
 `CUSTOMER_PHONE_NUMBER` in `.env` to deliberate test destinations.
 

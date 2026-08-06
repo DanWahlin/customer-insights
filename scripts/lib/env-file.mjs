@@ -14,3 +14,16 @@ export function updateEnvironmentText(source, updates) {
   for (const [key, value] of remaining) lines.push(`${key}=${value}`);
   return `${lines.join('\n')}\n`;
 }
+
+export function phoneConfigurationForResource(source, resourceName) {
+  const values = Object.fromEntries(source.split(/\r?\n/).flatMap(line => {
+    if (!line || line.trimStart().startsWith('#')) return [];
+    const separator = line.indexOf('=');
+    return separator < 1 ? [] : [[line.slice(0, separator).trim(), line.slice(separator + 1).trim()]];
+  }));
+  const ownerMatches = values.ACS_PHONE_NUMBER_RESOURCE === resourceName;
+  return {
+    ACS_PHONE_NUMBER: ownerMatches ? (values.ACS_PHONE_NUMBER || '') : '',
+    ACS_PHONE_NUMBER_RESOURCE: resourceName
+  };
+}
