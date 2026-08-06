@@ -1,7 +1,26 @@
-name: openai-acs-msgraph
+name: customer-insights
 metadata:
-  template: openai-acs-msgraph@1.0.0
+  template: customer-insights@1.0.0
 infra:
   provider: bicep
   path: infra
   module: main
+hooks:
+  preprovision:
+    posix:
+      shell: sh
+      run: node scripts/preprovision.mjs
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: node scripts/preprovision.mjs
+      continueOnError: false
+  postprovision:
+    posix:
+      shell: sh
+      run: node scripts/postprovision.mjs
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: node scripts/postprovision.mjs
+      continueOnError: false

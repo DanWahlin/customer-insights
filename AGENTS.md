@@ -11,13 +11,14 @@ Read `README.md` before changing setup, infrastructure, authentication, or secur
 - `client/`: Angular SPA, MSAL Browser, Microsoft Graph Client, and ACS Calling UI.
 - `server/typescript/`: Express API, PostgreSQL access, Foundry/model calls, document ingestion, and ACS email/SMS operations.
 - `customer documents/`: DOCX/XLSX corpus indexed by Foundry IQ.
-- `infra/` and `azure.yaml`: infrastructure-only azd/Bicep deployment for Foundry models and Azure AI Search.
-- `scripts/`: safe azd environment preparation and local `.env` configuration helpers.
+- `infra/` and `azure.yaml`: azd/Bicep deployment for Foundry models, Azure AI Search, ACS, and email.
+- `scripts/`: azd hooks for preflight, Entra reconciliation, secure local configuration, Foundry IQ indexing, and verification.
 - `docker-compose.yml`: local PostgreSQL 18 only.
 
 ## Non-negotiable boundaries
 
-- Keep Angular, Express, and PostgreSQL local. The checked-in azd/Bicep path deploys only Azure AI Services, the Foundry project/models, and Azure AI Search.
+- Keep Angular, Express, and PostgreSQL local. The checked-in azd path deploys Azure AI Services/models, Search, ACS, and email, then configures tenant-scoped Entra applications through a hook.
+- Do not call the Foundry project endpoint or depend on project connections. Runtime model calls use the deployed model endpoint; Foundry IQ uses Azure AI Search separately.
 - Keep AI, Search, PostgreSQL, and ACS credentials server-side in the ignored root `.env`. Never put secrets in Angular environment files, source, Bicep outputs, logs, or commits.
 - Use direct MSAL Browser and Microsoft Graph Client calls. Do not restore Microsoft Graph Toolkit packages, providers, or custom elements.
 - Cached authentication must remain silent-only. Interactive login and logout require explicit user actions.
@@ -49,16 +50,11 @@ npm start
 
 The API initializes and seeds the database during startup. Health endpoint: `http://localhost:3000/api/health`.
 
-Provision and configure Azure dependencies from the repository root:
+Provision and configure the cloud dependencies from the repository root:
 
 ```bash
-node scripts/prepare-azd-env.mjs
 azd provision --preview
 azd up
-node scripts/configure-local-env.mjs
-
-cd server/typescript
-npm run setup:foundry-iq
 ```
 
 Always inspect the selected azd environment, subscription, resource group, and preview before provisioning or deleting resources.
@@ -90,8 +86,8 @@ npm audit
 cd ..
 az bicep build --file infra/main.bicep
 node --check scripts/run-cli.mjs
-node --check scripts/prepare-azd-env.mjs
-node --check scripts/configure-local-env.mjs
+node --test scripts/tests/*.test.mjs
+for file in scripts/*.mjs scripts/lib/*.mjs; do node --check "$file"; done
 git diff --check
 ```
 

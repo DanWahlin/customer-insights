@@ -33,10 +33,13 @@ if (!subscriptionId) {
 const suffix = createHash('sha256').update(`${subscriptionId}:${environmentName}`).digest('hex').slice(0, 8);
 const defaults = {
   AZURE_LOCATION: location,
-  AZURE_RESOURCE_GROUP: `rg-ai-acs-orgdata-${resourceNamePrefix}-${suffix}`,
-  AI_ACCOUNT_NAME: `ai-acs-orgdata-${suffix}`,
-  AI_PROJECT_NAME: 'proj-ai-acs-orgdata',
-  AZURE_AI_SEARCH_SERVICE_NAME: `srch-ai-acs-orgdata-${suffix}`
+  AZURE_RESOURCE_GROUP: `rg-customer-insights-${resourceNamePrefix}-${suffix}`,
+  AI_ACCOUNT_NAME: `ai-customer-insights-${suffix}`,
+  AI_PROJECT_NAME: 'customer-insights',
+  AZURE_AI_SEARCH_SERVICE_NAME: `srch-customer-insights-${suffix}`,
+  ACS_RESOURCE_NAME: `acs-customer-insights-${suffix}`,
+  ACS_EMAIL_SERVICE_NAME: `email-customer-insights-${suffix}`,
+  ACS_DATA_LOCATION: 'United States'
 };
 
 for (const [key, defaultValue] of Object.entries(defaults)) {
@@ -47,6 +50,6 @@ for (const [key, defaultValue] of Object.entries(defaults)) {
 }
 
 console.log('Prepared azd environment:');
-for (const key of ['AZURE_RESOURCE_GROUP', 'AZURE_LOCATION', 'AI_ACCOUNT_NAME', 'AI_PROJECT_NAME', 'AZURE_AI_SEARCH_SERVICE_NAME']) {
+for (const key of ['AZURE_RESOURCE_GROUP', 'AZURE_LOCATION', 'AI_ACCOUNT_NAME', 'AI_PROJECT_NAME', 'AZURE_AI_SEARCH_SERVICE_NAME', 'ACS_RESOURCE_NAME', 'ACS_EMAIL_SERVICE_NAME', 'ACS_DATA_LOCATION']) {
   console.log(`  ${key}=${values[key]}`);
 }

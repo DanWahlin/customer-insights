@@ -2,25 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCli } from './run-cli.mjs';
+import { updateEnvironmentText } from './lib/env-file.mjs';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..');
 const envPath = path.join(repositoryRoot, '.env');
 const examplePath = path.join(repositoryRoot, '.env.example');
-
-function parseAzdValues(text) {
-  return Object.fromEntries(text.split(/\r?\n/).flatMap(line => {
-    const separator = line.indexOf('=');
-    if (separator < 1) return [];
-    const key = line.slice(0, separator);
-    const rawValue = line.slice(separator + 1);
-    try {
-      return [[key, JSON.parse(rawValue)]];
-    } catch {
-      return [[key, rawValue.replace(/^"|"$/g, '')]];
-    }
-  }));
-}
 
 function requireValue(values, key) {
   const value = values[key] == null ? '' : String(values[key]).trim();
@@ -28,29 +15,18 @@ function requireValue(values, key) {
   return value;
 }
 
-function updateEnvironmentFile(source, updates) {
-  const remaining = new Map(Object.entries(updates));
-  const lines = source.split(/\r?\n/).map(line => {
-    if (!line || line.trimStart().startsWith('#')) return line;
-    const separator = line.indexOf('=');
-    if (separator < 1) return line;
-    const key = line.slice(0, separator).trim();
-    if (!remaining.has(key)) return line;
-    const value = remaining.get(key);
-    remaining.delete(key);
-    return `${key}=${value}`;
-  });
 
-  while (lines.length && lines.at(-1) === '') lines.pop();
-  for (const [key, value] of remaining) lines.push(`${key}=${value}`);
-  return `${lines.join('\n')}\n`;
-}
-
-const values = parseAzdValues(runCli('azd', ['env', 'get-values', '--no-prompt']));
+const values = JSON.parse(runCli('azd', ['env', 'get-values', '--output', 'json', '--no-prompt']));
 const subscriptionId = requireValue(values, 'AZURE_SUBSCRIPTION_ID');
 const resourceGroup = requireValue(values, 'AZURE_RESOURCE_GROUP');
 const aiAccountName = requireValue(values, 'AI_ACCOUNT_NAME');
 const searchServiceName = requireValue(values, 'AZURE_AI_SEARCH_SERVICE_NAME');
+const communicationServiceName = requireValue(values, 'ACS_RESOURCE_NAME');
+const emailServiceName = requireValue(values, 'ACS_EMAIL_SERVICE_NAME');
+const entraTenantId = requireValue(values, 'ENTRA_TENANT_ID');
+const entraSpaAppId = requireValue(values, 'ENTRA_SPA_APP_ID');
+const entraApiAppId = requireValue(values, 'ENTRA_API_APP_ID');
+const entraApiScope = requireValue(values, 'ENTRA_API_SCOPE');
 const aiEndpoint = values.AI_ENDPOINT || `https://${aiAccountName}.openai.azure.com/`;
 const searchEndpoint = values.AZURE_AI_SEARCH_ENDPOINT || `https://${searchServiceName}.search.windows.net`;
 
@@ -72,8 +48,28 @@ const searchKey = runCli('az', [
   '--output', 'tsv',
   '--only-show-errors'
 ], { redactOutput: true });
+const communicationResourceUrl = `https://management.azure.com/subscriptions/${encodeURIComponent(subscriptionId)}/resourceGroups/${encodeURIComponent(resourceGroup)}/providers/Microsoft.Communication/communicationServices/${encodeURIComponent(communicationServiceName)}`;
+const emailDomainUrl = `https://management.azure.com/subscriptions/${encodeURIComponent(subscriptionId)}/resourceGroups/${encodeURIComponent(resourceGroup)}/providers/Microsoft.Communication/emailServices/${encodeURIComponent(emailServiceName)}/domains/AzureManagedDomain`;
+const acsConnectionString = runCli('az', [
+  'rest',
+  '--method', 'POST',
+  '--url', `${communicationResourceUrl}/listKeys?api-version=2025-09-01`,
+  '--query', 'primaryConnectionString',
+  '--output', 'tsv',
+  '--only-show-errors'
+], { redactOutput: true });
+const senderDomain = runCli('az', [
+  'rest',
+  '--method', 'GET',
+  '--url', `${emailDomainUrl}?api-version=2025-09-01`,
+  '--query', 'properties.fromSenderDomain',
+  '--output', 'tsv',
+  '--only-show-errors'
+]);
 
-if (!aiKey || !searchKey) throw new Error('Azure returned an empty AI or Search key.');
+if (!aiKey || !searchKey || !acsConnectionString || !senderDomain) {
+  throw new Error('Azure returned an empty AI key, Search key, ACS connection string, or managed email domain.');
+}
 
 const source = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : fs.readFileSync(examplePath, 'utf8');
 const updates = {
@@ -85,9 +81,18 @@ const updates = {
   AZURE_AI_SEARCH_KEY: searchKey,
   AZURE_AI_SEARCH_INDEX: 'customer-documents-index',
   AZURE_AI_SEARCH_KNOWLEDGE_SOURCE: 'customer-documents-ks',
-  AZURE_AI_SEARCH_KNOWLEDGE_BASE: 'customer-documents-kb'
+  AZURE_AI_SEARCH_KNOWLEDGE_BASE: 'customer-documents-kb',
+  ENTRAID_TENANT_ID: entraTenantId,
+  ENTRAID_CLIENT_ID: entraSpaAppId,
+  ENTRAID_API_CLIENT_ID: entraApiAppId,
+  ENTRAID_API_SCOPE: entraApiScope,
+  ACS_CONNECTION_STRING: acsConnectionString,
+  ACS_EMAIL_ADDRESS: `donotreply@${senderDomain}`
 };
 
-fs.writeFileSync(envPath, updateEnvironmentFile(source, updates), { mode: 0o600 });
+const temporaryPath = `${envPath}.${process.pid}.tmp`;
+fs.writeFileSync(temporaryPath, updateEnvironmentText(source, updates), { mode: 0o600 });
+fs.renameSync(temporaryPath, envPath);
 fs.chmodSync(envPath, 0o600);
-console.log('Updated the ignored root .env with Azure AI and Search settings. Secret values were not printed.');
+console.log('Updated the ignored root .env with Entra, Azure AI, Search, and ACS email settings. Secret values were not printed.');
+console.log(`Phone setup remains manual. Acquire the phone number from ACS resource ${communicationServiceName}, then set ACS_PHONE_NUMBER in .env.`);

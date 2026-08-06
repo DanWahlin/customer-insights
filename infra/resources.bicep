@@ -2,6 +2,9 @@ param location string
 param aiAccountName string
 param aiProjectName string
 param searchServiceName string
+param communicationServiceName string
+param emailServiceName string
+param communicationDataLocation string
 param aiModelDeploymentName string
 param aiModelVersion string
 param embeddingModelDeploymentName string
@@ -10,8 +13,8 @@ param aiModelCapacity int
 param embeddingModelCapacity int
 
 var commonTags = {
-  project: 'openai-acs-msgraph'
-  purpose: 'talk-demo'
+  project: 'customer-insights'
+  purpose: 'customer-insights-demo'
 }
 
 resource aiAccount 'Microsoft.CognitiveServices/accounts@2026-05-01' = {
@@ -43,8 +46,8 @@ resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2026-05-01' = 
     type: 'SystemAssigned'
   }
   properties: {
-    displayName: 'AI ACS Org Data'
-    description: 'Foundry project for the OpenAI, ACS, Microsoft Graph, and Foundry IQ talk demo'
+    displayName: 'Customer Insights'
+    description: 'Model deployments for the Customer Insights sample'
   }
   dependsOn: [
     embeddingModelDeployment
@@ -113,8 +116,48 @@ resource searchService 'Microsoft.Search/searchServices@2026-03-01-preview' = {
   }
 }
 
+resource emailService 'Microsoft.Communication/emailServices@2025-09-01' = {
+  name: emailServiceName
+  location: 'global'
+  tags: commonTags
+  properties: {
+    dataLocation: communicationDataLocation
+  }
+}
+
+resource emailDomain 'Microsoft.Communication/emailServices/domains@2025-09-01' = {
+  parent: emailService
+  name: 'AzureManagedDomain'
+  location: 'global'
+  properties: {
+    domainManagement: 'AzureManaged'
+    userEngagementTracking: 'Disabled'
+  }
+}
+
+resource communicationService 'Microsoft.Communication/communicationServices@2025-09-01' = {
+  name: communicationServiceName
+  location: 'global'
+  identity: {
+    type: 'SystemAssigned'
+  }
+  tags: commonTags
+  properties: {
+    dataLocation: communicationDataLocation
+    disableLocalAuth: false
+    linkedDomains: [
+      emailDomain.id
+    ]
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
 output aiAccountName string = aiAccount.name
 output aiProjectName string = aiProject.name
 output aiEndpoint string = 'https://${aiAccount.name}.openai.azure.com/'
 output searchServiceName string = searchService.name
 output searchEndpoint string = 'https://${searchService.name}.search.windows.net'
+output communicationServiceName string = communicationService.name
+output communicationEndpoint string = 'https://${communicationService.name}.communication.azure.com'
+output emailServiceName string = emailService.name
+output emailDomainName string = emailDomain.name

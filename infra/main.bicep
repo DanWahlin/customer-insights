@@ -25,6 +25,19 @@ param aiProjectName string
 @maxLength(60)
 param searchServiceName string
 
+@description('Globally unique Azure Communication Services resource name.')
+@minLength(1)
+@maxLength(63)
+param communicationServiceName string
+
+@description('Globally unique Email Communication Service resource name.')
+@minLength(1)
+@maxLength(63)
+param emailServiceName string
+
+@description('ACS data geography. This must match the Email Communication Service geography.')
+param communicationDataLocation string = 'United States'
+
 @description('GPT model deployment name.')
 param aiModelDeploymentName string = 'gpt-5-mini'
 
@@ -50,8 +63,8 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   location: location
   tags: {
     'managed-by': 'azd'
-    project: 'openai-acs-msgraph'
-    purpose: 'talk-demo'
+    project: 'customer-insights'
+    purpose: 'customer-insights-demo'
   }
 }
 
@@ -63,6 +76,9 @@ module azureDependencies './resources.bicep' = {
     aiAccountName: aiAccountName
     aiProjectName: aiProjectName
     searchServiceName: searchServiceName
+    communicationServiceName: communicationServiceName
+    emailServiceName: emailServiceName
+    communicationDataLocation: communicationDataLocation
     aiModelDeploymentName: aiModelDeploymentName
     aiModelVersion: aiModelVersion
     embeddingModelDeploymentName: embeddingModelDeploymentName
@@ -81,3 +97,8 @@ output AI_MODEL string = aiModelDeploymentName
 output AI_EMBEDDING_MODEL string = embeddingModelDeploymentName
 output AZURE_AI_SEARCH_SERVICE_NAME string = azureDependencies.outputs.searchServiceName
 output AZURE_AI_SEARCH_ENDPOINT string = azureDependencies.outputs.searchEndpoint
+output ACS_RESOURCE_NAME string = azureDependencies.outputs.communicationServiceName
+output ACS_ENDPOINT string = azureDependencies.outputs.communicationEndpoint
+output ACS_EMAIL_SERVICE_NAME string = azureDependencies.outputs.emailServiceName
+output ACS_EMAIL_DOMAIN_NAME string = azureDependencies.outputs.emailDomainName
+output ACS_DATA_LOCATION string = communicationDataLocation

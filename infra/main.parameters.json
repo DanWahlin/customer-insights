@@ -19,6 +19,15 @@
     },
     "searchServiceName": {
       "value": "${AZURE_AI_SEARCH_SERVICE_NAME}"
+    },
+    "communicationServiceName": {
+      "value": "${ACS_RESOURCE_NAME}"
+    },
+    "emailServiceName": {
+      "value": "${ACS_EMAIL_SERVICE_NAME}"
+    },
+    "communicationDataLocation": {
+      "value": "${ACS_DATA_LOCATION}"
     }
   }
 }

@@ -17,5 +17,5 @@ services:
 
 volumes:
   postgres-data-v18:
-    external: true
+    # Keep the established name so existing checkouts retain their local data.
     name: openai-acs-msgraph_postgres-data-v18
