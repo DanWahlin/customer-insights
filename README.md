@@ -178,15 +178,14 @@ node --test scripts/tests/*.test.mjs
 git diff --check
 ```
 
-The script integration tests require a POSIX shell. On Windows, run that test
-command from WSL or Git Bash; the application builds, audits, and Bicep compile
+The script integration tests require a POSIX Node.js environment. On Windows,
+run that test command from WSL; the application builds, audits, and Bicep compile
 can run from PowerShell 7.
 
 ## Cleanup
 
 For a dedicated environment, first release any purchased phone number from the
-ACS resource in the Azure portal. Then, from the repository root while that azd
-environment is selected:
+ACS resource in the Azure portal. Then run this from the repository root:
 
 ```bash
 node scripts/cleanup.mjs --yes --environment <exact-azd-environment-name>

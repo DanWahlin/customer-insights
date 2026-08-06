@@ -17,7 +17,7 @@ else if(name==='az'&&args[0]==='group'&&args[1]==='exists')process.stdout.write(
 else if(name==='docker'&&state.dockerFails)process.exit(1);else process.exit(0);
 `;
 
-  function runCleanup({ groupExists = true, dockerFails = false, expected = 'test', reuseRoot } = {}) {
+  function runCleanup({ groupExists = true, dockerFails = false, expected = 'test', reuseRoot, envOverrides = {}, localOwner = 'test' } = {}) {
     const root = reuseRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'customer-insights-cleanup-'));
     const bin = path.join(root, 'bin');
     if (!fs.existsSync(bin)) {
@@ -28,8 +28,8 @@ else if(name==='docker'&&state.dockerFails)process.exit(1);else process.exit(0);
     const statePath = path.join(root, 'state.json');
     const childPath = path.join(root, 'children.txt');
     const localEnvPath = path.join(root, '.env');
-    fs.writeFileSync(localEnvPath, 'AI_API_KEY=secret\nPOSTGRES_DATABASE=CustomersDB\n');
-    const env = { AZURE_SUBSCRIPTION_ID: 'sub', AZURE_RESOURCE_GROUP: 'rg-test', AZURE_ENV_NAME: 'test', ENTRA_TENANT_ID: 'tenant', ENTRA_SPA_APP_ID: 'spa', ENTRA_API_APP_ID: 'api' };
+    fs.writeFileSync(localEnvPath, `CUSTOMER_INSIGHTS_AZD_ENVIRONMENT=${localOwner}\nAI_API_KEY=secret\nPOSTGRES_DATABASE=CustomersDB\n`);
+    const env = { AZURE_SUBSCRIPTION_ID: 'sub', AZURE_RESOURCE_GROUP: 'rg-test', AZURE_ENV_NAME: 'test', ENTRA_TENANT_ID: 'tenant', ENTRA_SPA_APP_ID: 'spa', ENTRA_API_APP_ID: 'api', ...envOverrides };
     fs.writeFileSync(statePath, JSON.stringify({ env, groupExists, dockerFails, calls: [] }));
     const azureDir = path.join(repositoryRoot, '.azure', expected);
     fs.rmSync(path.join(azureDir, 'customer-insights-cleanup.json'), { force: true });
@@ -81,6 +81,27 @@ else if(name==='docker'&&state.dockerFails)process.exit(1);else process.exit(0);
       assert.match(fixture.result.stderr, /Compose shutdown failed/);
     } finally {
       fs.rmSync(manifest, { force: true }); fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('cleanup deletes Azure resources when Entra provisioning never stored a cleanup handle', () => {
+    const fixture = runCleanup({ envOverrides: { ENTRA_TENANT_ID: '', ENTRA_SPA_APP_ID: '', ENTRA_API_APP_ID: '' } });
+    try {
+      assert.equal(fixture.result.status, 0, fixture.result.stderr || fixture.result.stdout);
+      assert.match(fixture.result.stderr, /no complete Entra cleanup handle/);
+      assert.equal(fixture.children, '');
+    } finally {
+      fs.rmSync(fixture.manifest, { force: true }); fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test('cleanup does not clear local configuration owned by another environment', () => {
+    const fixture = runCleanup({ localOwner: 'other-environment' });
+    try {
+      assert.equal(fixture.result.status, 0, fixture.result.stderr || fixture.result.stdout);
+      assert.match(fs.readFileSync(fixture.localEnvPath, 'utf8'), /AI_API_KEY=secret/);
+    } finally {
+      fs.rmSync(fixture.manifest, { force: true }); fs.rmSync(fixture.root, { recursive: true, force: true });
     }
   });
 }

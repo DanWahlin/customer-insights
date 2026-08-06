@@ -67,16 +67,25 @@ async function ensureServicePrincipal(appId) {
 }
 
 async function ensureGrant(clientId, resourceId, desiredScopes) {
-  const result = await graph('GET', filteredPath('oauth2PermissionGrants', `clientId eq '${clientId}' and resourceId eq '${resourceId}' and consentType eq 'AllPrincipals'`));
-  if (result.value.length > 1) throw new Error('Multiple tenant-wide delegated grants exist for one client/resource pair.');
-  const scope = normalizedScopeSet(desiredScopes).join(' ');
-  if (!result.value.length) {
-    await graph('POST', '/oauth2PermissionGrants', { clientId, resourceId, consentType: 'AllPrincipals', principalId: null, scope });
-    return;
-  }
-  const current = result.value[0];
-  if (normalizedScopeSet(current.scope).join(' ') !== scope) {
-    await graph('PATCH', `/oauth2PermissionGrants/${current.id}`, { scope });
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    try {
+      const result = await graph('GET', filteredPath('oauth2PermissionGrants', `clientId eq '${clientId}' and resourceId eq '${resourceId}' and consentType eq 'AllPrincipals'`));
+      if (result.value.length > 1) throw new Error('Multiple tenant-wide delegated grants exist for one client/resource pair.');
+      const scope = normalizedScopeSet(desiredScopes).join(' ');
+      if (!result.value.length) {
+        await graph('POST', '/oauth2PermissionGrants', { clientId, resourceId, consentType: 'AllPrincipals', principalId: null, scope });
+        return;
+      }
+      const current = result.value[0];
+      if (normalizedScopeSet(current.scope).join(' ') !== scope) {
+        await graph('PATCH', `/oauth2PermissionGrants/${current.id}`, { scope });
+      }
+      return;
+    } catch (error) {
+      const transient = [404, 409, 429].includes(error.status) || error.status >= 500;
+      if (attempt === 8 || !transient) throw error;
+      await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+    }
   }
 }
 
@@ -109,6 +118,8 @@ async function main() {
   const selectedTenant = parseJson(runCli('az', ['account', 'show', '--output', 'json'])).tenantId;
   const requestedTenant = values.ENTRA_TENANT_ID || values.AZURE_TENANT_ID || selectedTenant;
   if (!requestedTenant) throw new Error('Set ENTRA_TENANT_ID when the Microsoft 365 tenant differs from the selected Azure tenant.');
+  runCli('azd', ['env', 'set', 'ENTRA_TENANT_ID', requestedTenant, '--no-prompt']);
+  values.ENTRA_TENANT_ID = requestedTenant;
   graph = await createGraphClient({ tenantId: requestedTenant, runCli });
 
     const names = appDisplayNames(environmentName, values.CUSTOMER_INSIGHTS_INSTANCE_ID);

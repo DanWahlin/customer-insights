@@ -73,6 +73,7 @@ if (!aiKey || !searchKey || !acsConnectionString || !senderDomain) {
 
 const source = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : fs.readFileSync(examplePath, 'utf8');
 const updates = {
+  CUSTOMER_INSIGHTS_AZD_ENVIRONMENT: values.AZURE_ENV_NAME,
   AI_API_KEY: aiKey,
   AI_ENDPOINT: aiEndpoint,
   AI_MODEL: values.AI_MODEL || 'gpt-5-mini',

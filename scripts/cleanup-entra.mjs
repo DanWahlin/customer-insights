@@ -14,11 +14,8 @@ const tenantId = values.ENTRA_TENANT_ID || values.AZURE_TENANT_ID;
 const applications = [
   ['ENTRA_SPA_APP_ID', values.ENTRA_SPA_APP_ID],
   ['ENTRA_API_APP_ID', values.ENTRA_API_APP_ID]
-];
+].filter(([, appId]) => appId);
 if (!tenantId) throw new Error('The cleanup input does not contain an Entra tenant ID.');
-for (const [key, appId] of applications) {
-  if (!appId) throw new Error(`The cleanup input does not contain ${key}.`);
-}
 
 const graph = await createGraphClient({ tenantId, runCli });
 const verified = [];
