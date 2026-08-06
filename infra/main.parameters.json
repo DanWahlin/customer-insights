@@ -20,6 +20,9 @@
     "searchServiceName": {
       "value": "${AZURE_AI_SEARCH_SERVICE_NAME}"
     },
+    "searchSku": {
+      "value": "${AZURE_AI_SEARCH_SKU}"
+    },
     "communicationServiceName": {
       "value": "${ACS_RESOURCE_NAME}"
     },

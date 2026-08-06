@@ -37,6 +37,7 @@ const defaults = {
   AI_ACCOUNT_NAME: `ai-customer-insights-${suffix}`,
   AI_PROJECT_NAME: 'customer-insights',
   AZURE_AI_SEARCH_SERVICE_NAME: `srch-customer-insights-${suffix}`,
+  AZURE_AI_SEARCH_SKU: 'free',
   ACS_RESOURCE_NAME: `acs-customer-insights-${suffix}`,
   ACS_EMAIL_SERVICE_NAME: `email-customer-insights-${suffix}`,
   ACS_DATA_LOCATION: 'United States'
@@ -50,6 +51,6 @@ for (const [key, defaultValue] of Object.entries(defaults)) {
 }
 
 console.log('Prepared azd environment:');
-for (const key of ['AZURE_RESOURCE_GROUP', 'AZURE_LOCATION', 'AI_ACCOUNT_NAME', 'AI_PROJECT_NAME', 'AZURE_AI_SEARCH_SERVICE_NAME', 'ACS_RESOURCE_NAME', 'ACS_EMAIL_SERVICE_NAME', 'ACS_DATA_LOCATION']) {
+for (const key of ['AZURE_RESOURCE_GROUP', 'AZURE_LOCATION', 'AI_ACCOUNT_NAME', 'AI_PROJECT_NAME', 'AZURE_AI_SEARCH_SERVICE_NAME', 'AZURE_AI_SEARCH_SKU', 'ACS_RESOURCE_NAME', 'ACS_EMAIL_SERVICE_NAME', 'ACS_DATA_LOCATION']) {
   console.log(`  ${key}=${values[key]}`);
 }

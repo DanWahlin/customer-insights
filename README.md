@@ -26,7 +26,10 @@ Phone-number acquisition is manual because Microsoft or the carrier may require 
 - A Microsoft 365 tenant
 - A tenant administrator authorized to grant the requested delegated permissions
 
-Azure AI Search Free is limited to one service per subscription. The selected region must also have quota for the configured models.
+Azure AI Search Free is limited to one service per subscription. The selected
+region must also have quota for the configured models. If the subscription
+already has its Free service, set `AZURE_AI_SEARCH_SKU` to `basic` before
+`azd up`.
 
 ## Provision the cloud dependencies
 

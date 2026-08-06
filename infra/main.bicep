@@ -25,6 +25,13 @@ param aiProjectName string
 @maxLength(60)
 param searchServiceName string
 
+@description('Azure AI Search SKU. Use Basic when the subscription already has its single Free service.')
+@allowed([
+  'free'
+  'basic'
+])
+param searchSku string = 'free'
+
 @description('Globally unique Azure Communication Services resource name.')
 @minLength(1)
 @maxLength(63)
@@ -76,6 +83,7 @@ module azureDependencies './resources.bicep' = {
     aiAccountName: aiAccountName
     aiProjectName: aiProjectName
     searchServiceName: searchServiceName
+    searchSku: searchSku
     communicationServiceName: communicationServiceName
     emailServiceName: emailServiceName
     communicationDataLocation: communicationDataLocation
@@ -97,6 +105,7 @@ output AI_MODEL string = aiModelDeploymentName
 output AI_EMBEDDING_MODEL string = embeddingModelDeploymentName
 output AZURE_AI_SEARCH_SERVICE_NAME string = azureDependencies.outputs.searchServiceName
 output AZURE_AI_SEARCH_ENDPOINT string = azureDependencies.outputs.searchEndpoint
+output AZURE_AI_SEARCH_SKU string = searchSku
 output ACS_RESOURCE_NAME string = azureDependencies.outputs.communicationServiceName
 output ACS_ENDPOINT string = azureDependencies.outputs.communicationEndpoint
 output ACS_EMAIL_SERVICE_NAME string = azureDependencies.outputs.emailServiceName

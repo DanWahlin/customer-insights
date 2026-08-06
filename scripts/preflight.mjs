@@ -1,4 +1,5 @@
 import { runCli } from './run-cli.mjs';
+import { acquireGraphToken } from './lib/graph-client.mjs';
 
 const values = JSON.parse(runCli('azd', ['env', 'get-values', '--output', 'json', '--no-prompt']));
 const subscriptionId = values.AZURE_SUBSCRIPTION_ID;
@@ -11,7 +12,7 @@ if (!subscriptions.some(subscription => subscription.id === subscriptionId && su
 }
 
 if (values.ENTRA_TENANT_ID) {
-  runCli('az', ['account', 'get-access-token', '--tenant', values.ENTRA_TENANT_ID, '--resource-type', 'ms-graph', '--output', 'none', '--only-show-errors'], { redactOutput: true });
+  acquireGraphToken({ tenantId: values.ENTRA_TENANT_ID, runCli });
 }
 
 for (const namespace of ['Microsoft.CognitiveServices', 'Microsoft.Search', 'Microsoft.Communication']) {
@@ -34,7 +35,8 @@ const managedSearchExists = existingFreeSearch.some(service =>
   service.name === values.AZURE_AI_SEARCH_SERVICE_NAME &&
   service.resourceGroup?.toLowerCase() === values.AZURE_RESOURCE_GROUP?.toLowerCase()
 );
-if (existingFreeSearch.length && !managedSearchExists) {
+const searchSku = String(values.AZURE_AI_SEARCH_SKU || 'free').toLowerCase();
+if (searchSku === 'free' && existingFreeSearch.length && !managedSearchExists) {
   throw new Error(`Subscription ${subscriptionId} already contains Azure AI Search Free service ${existingFreeSearch[0].name}. Use a different subscription or explicitly adopt that dedicated resource.`);
 }
 

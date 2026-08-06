@@ -2,6 +2,7 @@ import path from 'node:path';
 import OpenAI from 'openai';
 import '../config';
 import { chunkDocuments, extractDocuments } from '../documentIngestion';
+import { retryTransient } from '../retryTransient';
 
 const SEARCH_API_VERSION = '2026-04-01';
 const VECTOR_DIMENSIONS = 1536;
@@ -48,10 +49,13 @@ async function main() {
   console.log(`Extracted ${documents.length} documents into ${chunks.length} chunks.`);
   if (skippedEmpty.length) console.log(`Skipped empty documents: ${skippedEmpty.join(', ')}`);
 
-  const embeddings = await openai.embeddings.create({
+  const embeddings = await retryTransient(() => openai.embeddings.create({
     model: AI_EMBEDDING_MODEL,
     input: chunks.map(chunk => chunk.content),
     dimensions: VECTOR_DIMENSIONS
+  }), error => {
+    const status = (error as { status?: number }).status;
+    return status === 401 || status === 404 || status === 429 || (status != null && status >= 500);
   });
   if (embeddings.data.length !== chunks.length) {
     throw new Error(`Expected ${chunks.length} embeddings but received ${embeddings.data.length}.`);

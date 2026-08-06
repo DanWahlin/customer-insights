@@ -80,6 +80,23 @@ async function ensureGrant(clientId, resourceId, desiredScopes) {
   }
 }
 
+async function configureApiApplication(applicationObjectId, patch) {
+  const { preAuthorizedApplications, ...apiWithoutPreauthorization } = patch.api;
+  await graph('PATCH', `/applications/${applicationObjectId}`, {
+    ...patch,
+    api: apiWithoutPreauthorization
+  });
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    try {
+      await graph('PATCH', `/applications/${applicationObjectId}`, patch);
+      return;
+    } catch (error) {
+      if (attempt === 8 || ![400, 404].includes(error.status)) throw error;
+      await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+    }
+  }
+}
+
 function graphScopeMap(graphServicePrincipal) {
   return Object.fromEntries((graphServicePrincipal.oauth2PermissionScopes ?? [])
     .filter(scope => scope.isEnabled && GRAPH_SCOPE_NAMES.includes(scope.value))
@@ -104,7 +121,7 @@ async function main() {
       ...(values.ENTRA_ADDITIONAL_REDIRECT_URIS || '').split(',')
     ]);
 
-    await graph('PATCH', `/applications/${apiApp.id}`, apiApplicationPatch(apiApp.appId, scopeId, spaApp.appId));
+    await configureApiApplication(apiApp.id, apiApplicationPatch(apiApp.appId, scopeId, spaApp.appId));
     const graphSp = (await graph('GET', filteredPath('servicePrincipals', `appId eq '${GRAPH_APP_ID}'`))).value[0];
     if (!graphSp) throw new Error('Microsoft Graph service principal was not found in the tenant.');
     await graph('PATCH', `/applications/${spaApp.id}`, spaApplicationPatch(

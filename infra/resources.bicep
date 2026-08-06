@@ -2,6 +2,7 @@ param location string
 param aiAccountName string
 param aiProjectName string
 param searchServiceName string
+param searchSku string
 param communicationServiceName string
 param emailServiceName string
 param communicationDataLocation string
@@ -97,7 +98,7 @@ resource searchService 'Microsoft.Search/searchServices@2026-03-01-preview' = {
   name: searchServiceName
   location: location
   sku: {
-    name: 'free'
+    name: searchSku
   }
   tags: commonTags
   properties: {
