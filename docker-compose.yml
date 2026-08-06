@@ -17,4 +17,5 @@ services:
 
 volumes:
   postgres-data-v18:
+    external: true
     name: openai-acs-msgraph_postgres-data-v18
