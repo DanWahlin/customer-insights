@@ -36,7 +36,7 @@ case "$1" in
 esac
 `, { mode: 0o755 });
     const env={
-      AZURE_SUBSCRIPTION_ID:'sub',AZURE_RESOURCE_GROUP:'rg',AI_ACCOUNT_NAME:'ai',AI_PROJECT_NAME:'project',AZURE_AI_SEARCH_SERVICE_NAME:'search',ACS_RESOURCE_NAME:'acs',ACS_EMAIL_SERVICE_NAME:'email'
+      AZURE_SUBSCRIPTION_ID:'sub',AZURE_RESOURCE_GROUP:'rg',AI_ACCOUNT_NAME:'ai',AI_PROJECT_NAME:'project',AI_MODEL:'gpt-5-mini',AI_EMBEDDING_MODEL:'text-embedding-3-small',AZURE_AI_SEARCH_SERVICE_NAME:'search',ACS_RESOURCE_NAME:'acs',ACS_EMAIL_SERVICE_NAME:'email'
     };
     const fingerprint = foundryIqFingerprint(repositoryRoot, ['customer documents','server/typescript/scripts','server/typescript/documentIngestion.ts'], {
       aiAccountName: env.AI_ACCOUNT_NAME, aiEndpoint: env.AI_ENDPOINT, embeddingModel: env.AI_EMBEDDING_MODEL,
@@ -50,6 +50,7 @@ esac
     const state=JSON.parse(fs.readFileSync(statePath,'utf8'));
     assert.equal(state.calls.some(call=>call[0]==='npm'),false);
     assert.equal(state.calls.filter(call=>call[0]==='az' && call[1]==='resource' && call[2]==='show').length,4);
+    assert.equal(state.calls.filter(call=>call[0]==='az' && call.includes('deployment') && call.includes('show')).length,2);
     assert.match(result.stdout,/unchanged; skipping re-indexing/);
   } finally { fs.rmSync(root,{recursive:true,force:true}); }
 });

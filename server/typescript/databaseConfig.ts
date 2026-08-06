@@ -8,3 +8,8 @@ export const databaseConfig: PoolConfig = {
   password: process.env.POSTGRES_PASSWORD,
   port: Number(process.env.POSTGRES_PORT || 5432)
 };
+
+export const runtimeDatabaseConfig: PoolConfig = {
+  ...databaseConfig,
+  user: 'app_runtime'
+};

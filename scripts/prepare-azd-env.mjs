@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { runCli } from './run-cli.mjs';
 
 function parseAzdValues(text) {
@@ -22,7 +22,8 @@ function safeEnvironmentName(value) {
 }
 
 const values = parseAzdValues(runCli('azd', ['env', 'get-values', '--no-prompt']));
-const environmentName = safeEnvironmentName(values.AZURE_ENV_NAME || '');
+const rawEnvironmentName = values.AZURE_ENV_NAME || '';
+const environmentName = safeEnvironmentName(rawEnvironmentName);
 const resourceNamePrefix = environmentName.slice(0, 20);
 const subscriptionId = values.AZURE_SUBSCRIPTION_ID;
 const location = values.AZURE_LOCATION || 'southcentralus';
@@ -30,7 +31,12 @@ if (!subscriptionId) {
   throw new Error('Set AZURE_SUBSCRIPTION_ID with azd env set before preparing resource names.');
 }
 
-const suffix = createHash('sha256').update(`${subscriptionId}:${environmentName}`).digest('hex').slice(0, 8);
+const instanceId = values.CUSTOMER_INSIGHTS_INSTANCE_ID || randomBytes(4).toString('hex');
+if (!values.CUSTOMER_INSIGHTS_INSTANCE_ID) {
+  runCli('azd', ['env', 'set', 'CUSTOMER_INSIGHTS_INSTANCE_ID', instanceId, '--no-prompt']);
+  values.CUSTOMER_INSIGHTS_INSTANCE_ID = instanceId;
+}
+const suffix = createHash('sha256').update(`${subscriptionId}:${rawEnvironmentName}:${instanceId}`).digest('hex').slice(0, 8);
 const defaults = {
   AZURE_LOCATION: location,
   AZURE_RESOURCE_GROUP: `rg-customer-insights-${resourceNamePrefix}-${suffix}`,

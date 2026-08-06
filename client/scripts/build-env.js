@@ -22,7 +22,7 @@ function loadEnv() {
   return env;
 }
 
-function updateEnvironment(isProd = false) {
+export function updateEnvironment(isProd = false) {
   const env = loadEnv();
   
   // Build the environment object
@@ -49,7 +49,7 @@ function updateEnvironment(isProd = false) {
     if (typeof value === 'boolean') {
       return `  ${key}: ${value}`;
     } else {
-      return `  ${key}: '${value}'`;
+      return `  ${key}: ${JSON.stringify(String(value))}`;
     }
   });
   

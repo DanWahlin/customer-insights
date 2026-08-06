@@ -1,8 +1,8 @@
 import { Pool } from 'pg';
 import { QueryData } from './interfaces';
-import { databaseConfig } from './databaseConfig';
+import { runtimeDatabaseConfig } from './databaseConfig';
 
-const pool = new Pool(databaseConfig);
+const pool = new Pool(runtimeDatabaseConfig);
 
 async function getCustomers() {
     console.log('Getting customers from database.');
@@ -22,7 +22,6 @@ async function queryDb(sqlCommandObject: QueryData): Promise<any[]> {
     const client = await pool.connect();
     try {
         await client.query('BEGIN TRANSACTION READ ONLY');
-        await client.query('SET LOCAL ROLE app_readonly');
         await client.query('SET LOCAL statement_timeout = 5000');
         const result = await client.query(withoutTrailingSemicolon, sqlCommandObject.paramValues);
         await client.query('COMMIT');

@@ -53,11 +53,10 @@ The API initializes and seeds the database during startup. Health endpoint: `htt
 Provision and configure the cloud dependencies from the repository root:
 
 ```bash
-azd provision --preview
 azd up
 ```
 
-Always inspect the selected azd environment, subscription, resource group, and preview before provisioning or deleting resources.
+Always inspect the selected azd environment, subscription, and resource group before provisioning or deleting resources.
 
 ## Implementation guidance
 

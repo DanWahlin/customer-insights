@@ -24,6 +24,10 @@ globalThis.fetch = async (rawUrl, options = {}) => {
     const displayName = filter.match(/displayName eq '([^']+)'/)?.[1];
     return jsonResponse({ value: state.apps.filter(app => app.appId === appId || app.displayName === displayName) });
   }
+  if (method === 'GET' && resource.startsWith('applications/')) {
+    const app = state.apps.find(item => item.id === resource.split('/')[1]);
+    return app ? jsonResponse(app) : jsonResponse({ error: { code: 'Request_ResourceNotFound' } }, 404);
+  }
   if (method === 'POST' && resource === 'applications') {
     const index = state.apps.length + 1;
     const app = { id: `object-${index}`, appId: `app-${index}`, ...body };

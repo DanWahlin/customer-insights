@@ -6,7 +6,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class PhonePipe implements PipeTransform {
 
-  transform(value: string | number): string {
+  transform(value: string | number | null | undefined): string {
+    if (value == null) return '';
     let phoneNumber = value.toString();
 
     // Remove the plus symbol if present

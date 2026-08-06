@@ -4,6 +4,7 @@ import { assertCloudReadiness } from '../lib/cloud-readiness.mjs';
 
 const ready = {
   aiState: 'Succeeded',
+  modelDeploymentStates: { 'gpt-5-mini': 'Succeeded', 'text-embedding-3-small': 'Succeeded' },
   searchState: 'running',
   communicationState: 'Succeeded',
   emailState: 'Succeeded',
@@ -26,4 +27,11 @@ test('cloud readiness reports failed ACS and email states', () => {
     communicationState: 'Failed',
     emailDomainState: 'Creating'
   }), /ACS=Failed.*EmailDomain=Creating/);
+});
+
+test('cloud readiness rejects a failed model deployment', () => {
+  assert.throws(() => assertCloudReadiness({
+    ...ready,
+    modelDeploymentStates: { ...ready.modelDeploymentStates, 'gpt-5-mini': 'Failed' }
+  }), /Model gpt-5-mini=Failed/);
 });

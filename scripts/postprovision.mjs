@@ -48,6 +48,19 @@ const aiState = runCli('az', [
   '--output', 'tsv',
   '--only-show-errors'
 ]);
+const modelDeploymentStates = {};
+for (const deployment of [values.AI_MODEL, values.AI_EMBEDDING_MODEL]) {
+  modelDeploymentStates[deployment] = runCli('az', [
+    'cognitiveservices', 'account', 'deployment', 'show',
+    '--subscription', values.AZURE_SUBSCRIPTION_ID,
+    '--resource-group', values.AZURE_RESOURCE_GROUP,
+    '--name', values.AI_ACCOUNT_NAME,
+    '--deployment-name', deployment,
+    '--query', 'properties.provisioningState',
+    '--output', 'tsv',
+    '--only-show-errors'
+  ]);
+}
 const searchState = runCli('az', [
   'search', 'service', 'show',
   '--subscription', values.AZURE_SUBSCRIPTION_ID,
@@ -74,6 +87,7 @@ const emailDomainState = JSON.parse(resourceProperty(emailDomainResourceId, 'pro
 const linkedDomains = JSON.parse(resourceProperty(communicationResourceId, 'properties.linkedDomains'));
 assertCloudReadiness({
   aiState,
+  modelDeploymentStates,
   searchState,
   communicationState,
   emailState,

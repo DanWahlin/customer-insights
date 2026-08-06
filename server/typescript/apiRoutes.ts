@@ -9,9 +9,11 @@ import { getCustomers, queryDb } from './postgres';
 
 const router = Router();
 const aiLimiter = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false });
-const communicationLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false });
+const tokenLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
+const emailLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false });
+const smsLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false });
 
-router.get('/acstoken', communicationLimiter, async (_req, res) => {
+router.get('/acstoken', tokenLimiter, async (_req, res) => {
     try {
         res.json(await createACSToken());
     }
@@ -61,7 +63,7 @@ router.post('/generateSql', aiLimiter, async (req: Request, res: Response): Prom
     }
 });
 
-router.post('/sendEmail', communicationLimiter, async (req: Request, res: Response): Promise<void> => {
+router.post('/sendEmail', emailLimiter, async (req: Request, res: Response): Promise<void> => {
     const { subject, message, customerName, customerEmailAddress } = req.body;
 
     if (typeof subject !== 'string' || !subject.trim() || subject.length > 500 ||
@@ -96,7 +98,7 @@ router.post('/sendEmail', communicationLimiter, async (req: Request, res: Respon
     }
 });
 
-router.post('/sendSms', communicationLimiter, async (req: Request, res: Response): Promise<void> => {
+router.post('/sendSms', smsLimiter, async (req: Request, res: Response): Promise<void> => {
     const message = req.body.message;
     const customerPhoneNumber = req.body.customerPhoneNumber;
 

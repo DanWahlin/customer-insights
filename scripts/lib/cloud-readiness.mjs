@@ -1,5 +1,6 @@
 export function assertCloudReadiness({
   aiState,
+  modelDeploymentStates,
   searchState,
   communicationState,
   emailState,
@@ -9,6 +10,9 @@ export function assertCloudReadiness({
 }) {
   const failures = [];
   if (aiState !== 'Succeeded') failures.push(`AI=${aiState}`);
+  for (const [name, state] of Object.entries(modelDeploymentStates ?? {})) {
+    if (state !== 'Succeeded') failures.push(`Model ${name}=${state}`);
+  }
   if (String(searchState).toLowerCase() !== 'running') failures.push(`Search=${searchState}`);
   if (communicationState !== 'Succeeded') failures.push(`ACS=${communicationState}`);
   if (emailState !== 'Succeeded') failures.push(`Email=${emailState}`);

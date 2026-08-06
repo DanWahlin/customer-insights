@@ -22,6 +22,7 @@ test('appDisplayNames are deterministic and environment-scoped', () => {
     spa: 'customer-insights-demo-west-spa',
     api: 'customer-insights-demo-west-api'
   });
+  assert.notDeepEqual(appDisplayNames('demo west', 'instance-a'), appDisplayNames('demo west', 'instance-b'));
 });
 
 test('redirect URIs include localhost, normalize HTTPS, and reject insecure remote URLs', () => {

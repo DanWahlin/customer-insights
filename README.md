@@ -22,6 +22,7 @@ Phone-number acquisition is manual because Microsoft or the carrier may require 
 - Docker or another Compose-compatible runtime
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- PowerShell 7 (`pwsh`) on Windows
 - An Azure subscription
 - Contributor or Owner access on that subscription
 - A Microsoft 365 tenant
@@ -35,6 +36,8 @@ npm --version
 docker compose version
 az version
 azd version
+# Windows only
+pwsh --version
 ```
 
 Azure AI Search Free is limited to one service per subscription. The selected
@@ -51,7 +54,7 @@ git clone https://github.com/DanWahlin/customer-insights.git
 cd customer-insights
 az login
 azd auth login
-azd env new customer-insights
+azd env new <unique-environment-name>
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <azure-region>
 ```
@@ -71,21 +74,22 @@ before deployment:
 azd env set AZURE_AI_SEARCH_SKU basic
 ```
 
-Basic Search is billable until the resource group is deleted.
+Azure AI Services S0, model usage, and Basic Search are billable until the
+resource group is deleted. Phone numbers have separate recurring charges.
 
-Review and deploy:
+Deploy:
 
 ```bash
-azd provision --preview
 azd up
 ```
 
 `azd up` creates the resources, configures Entra, writes the ignored local
-`.env`, and builds the Foundry IQ index. It does not print secrets. If the
+`.env`, and builds the Foundry IQ index. It also grants the requested delegated
+permissions tenant-wide. It does not print secrets. If the
 signed-in account cannot grant tenant-wide consent, rerun it as an authorized
 tenant administrator.
 
-Successful setup ends with `Customer Insights cloud setup is ready.` Confirm
+Successful setup prints `Customer Insights cloud setup is ready.` Confirm
 the generated resource names with:
 
 ```bash
@@ -117,6 +121,9 @@ environments, preventing it from being used with the wrong ACS connection.
 
 Before testing real sends, set `CUSTOMER_EMAIL_ADDRESS` and
 `CUSTOMER_PHONE_NUMBER` in `.env` to deliberate test destinations.
+The API ignores browser-supplied destinations and sends only to these values.
+Set `TEAM_ID` and `CHANNEL_ID` to enable Teams channel messages. Restart the API
+and client after changing `.env`.
 
 ## Run locally
 
@@ -171,6 +178,10 @@ node --test scripts/tests/*.test.mjs
 git diff --check
 ```
 
+The script integration tests require a POSIX shell. On Windows, run that test
+command from WSL or Git Bash; the application builds, audits, and Bicep compile
+can run from PowerShell 7.
+
 ## Cleanup
 
 For a dedicated environment, first release any purchased phone number from the
@@ -178,7 +189,7 @@ ACS resource in the Azure portal. Then, from the repository root while that azd
 environment is selected:
 
 ```bash
-node scripts/cleanup.mjs --yes
+node scripts/cleanup.mjs --yes --environment <exact-azd-environment-name>
 ```
 
 Cleanup succeeds only after Azure reports that the selected environment's

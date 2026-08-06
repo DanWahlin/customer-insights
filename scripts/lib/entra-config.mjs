@@ -19,12 +19,14 @@ export function stableGuid(seed) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export function appDisplayNames(environmentName) {
+export function appDisplayNames(environmentName, instanceId = '') {
   const suffix = String(environmentName).trim().replace(/[^a-zA-Z0-9-]/g, '-');
   if (!suffix) throw new Error('AZURE_ENV_NAME is required for Entra application names.');
+  const instanceSuffix = String(instanceId).trim();
+  const qualified = instanceSuffix ? `${suffix}-${instanceSuffix}` : suffix;
   return {
-    spa: `customer-insights-${suffix}-spa`,
-    api: `customer-insights-${suffix}-api`
+    spa: `customer-insights-${qualified}-spa`,
+    api: `customer-insights-${qualified}-api`
   };
 }
 

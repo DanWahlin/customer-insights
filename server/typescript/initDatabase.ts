@@ -138,6 +138,19 @@ export async function initializeDb() {
     await client.query('GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_readonly');
     await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO app_readonly');
     await client.query('GRANT EXECUTE ON FUNCTION get_customers() TO app_readonly');
+    const runtimePassword = process.env.POSTGRES_PASSWORD;
+    if (!runtimePassword) throw new Error('POSTGRES_PASSWORD is required to configure the runtime database role.');
+    await client.query(`DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_runtime') THEN
+          CREATE ROLE app_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT;
+        END IF;
+      END
+    $$;`);
+    await client.query('ALTER ROLE app_runtime NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT');
+    const passwordStatement = (await client.query("SELECT format('ALTER ROLE app_runtime PASSWORD %L', $1::text) AS sql", [runtimePassword])).rows[0].sql;
+    await client.query(passwordStatement);
+    await client.query('GRANT app_readonly TO app_runtime');
     await client.query('COMMIT');
     console.log(tablesExisted && customerCount > 0 ? 'Database already initialized' : 'Database initialized');
   } catch (error) {

@@ -3,6 +3,7 @@
 # Environment variables
 .env
 .azure/
+**/customer-insights-cleanup.json
 environment.*
 
 # Postgres data folder

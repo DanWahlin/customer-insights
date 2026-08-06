@@ -70,7 +70,7 @@ export class DataService {
       val = val.toLowerCase();
       const filteredData = data.filter((data: any) => {
         for (const property in data) {
-          const propValue = data ? data[property].toString().toLowerCase() : '';
+          const propValue = String(data?.[property] ?? '').toLowerCase();
           if (propValue && propValue.indexOf(val) > -1) {
             return true;
           }

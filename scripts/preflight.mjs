@@ -37,7 +37,7 @@ const managedSearchExists = existingFreeSearch.some(service =>
 );
 const searchSku = String(values.AZURE_AI_SEARCH_SKU || 'free').toLowerCase();
 if (searchSku === 'free' && existingFreeSearch.length && !managedSearchExists) {
-  throw new Error(`Subscription ${subscriptionId} already contains Azure AI Search Free service ${existingFreeSearch[0].name}. Use a different subscription or explicitly adopt that dedicated resource.`);
+  throw new Error(`Subscription ${subscriptionId} already contains Azure AI Search Free service ${existingFreeSearch[0].name}. Run "azd env set AZURE_AI_SEARCH_SKU basic" (billable) or use a different subscription.`);
 }
 
 console.log(`Preflight passed for Azure subscription ${subscriptionId} and signed-in tenant ${account.tenantId}.`);

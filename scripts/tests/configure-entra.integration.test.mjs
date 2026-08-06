@@ -113,8 +113,8 @@ test('configure-entra reconciles applications, service principals, grants, and a
     unsafeState.env.ENTRA_SPA_APP_ID = 'unsafe-app';
     unsafeState.env.ENTRA_API_APP_ID = 'unsafe-api';
     unsafeState.apps = [
-      { id: 'unsafe-object', appId: 'unsafe-app', displayName: 'unowned-spa', tags: [] },
-      { id: 'unsafe-api-object', appId: 'unsafe-api', displayName: 'owned-api', tags: ['customer-insights-azd'] }
+      { id: 'unsafe-object', appId: 'unsafe-app', displayName: 'owned-spa', tags: ['customer-insights-azd'] },
+      { id: 'unsafe-api-object', appId: 'unsafe-api', displayName: 'unowned-api', tags: [] }
     ];
     fs.writeFileSync(statePath, JSON.stringify(unsafeState));
     const refused = spawnSync(process.execPath, [path.join(repositoryRoot, 'scripts/cleanup-entra.mjs'), '--yes'], {

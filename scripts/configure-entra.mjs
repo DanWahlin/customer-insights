@@ -32,8 +32,8 @@ function filteredPath(resource, filter) {
 async function findApplication(appId, displayName) {
   if (appId) {
     const result = await graph('GET', filteredPath('applications', `appId eq '${escaped(appId)}'`));
-    if (result.value.length !== 1) throw new Error(`Stored Entra application ${appId} was not found exactly once.`);
-    return result.value[0];
+    if (result.value.length > 1) throw new Error(`Stored Entra application ${appId} was found more than once.`);
+    if (result.value.length === 1) return result.value[0];
   }
   const result = await graph('GET', filteredPath('applications', `displayName eq '${escaped(displayName)}'`));
   if (result.value.length > 1) throw new Error(`Multiple Entra applications are named ${displayName}; refusing to choose one.`);
@@ -111,9 +111,13 @@ async function main() {
   if (!requestedTenant) throw new Error('Set ENTRA_TENANT_ID when the Microsoft 365 tenant differs from the selected Azure tenant.');
   graph = await createGraphClient({ tenantId: requestedTenant, runCli });
 
-    const names = appDisplayNames(environmentName);
+    const names = appDisplayNames(environmentName, values.CUSTOMER_INSIGHTS_INSTANCE_ID);
     const apiApp = await ensureApplication(values.ENTRA_API_APP_ID, names.api);
     const spaApp = await ensureApplication(values.ENTRA_SPA_APP_ID, names.spa);
+    for (const [key, value] of [['ENTRA_API_APP_ID', apiApp.appId], ['ENTRA_SPA_APP_ID', spaApp.appId]]) {
+      runCli('azd', ['env', 'set', key, value, '--no-prompt']);
+      values[key] = value;
+    }
     const existingScopeId = apiApp.api?.oauth2PermissionScopes?.find(scope => scope.value === 'access_as_user')?.id;
     const scopeId = values.ENTRA_API_SCOPE_ID || existingScopeId || stableGuid(`${requestedTenant}:${environmentName}:access_as_user`);
     const redirectUris = normalizeRedirectUris([
@@ -134,8 +138,9 @@ async function main() {
     try {
       await ensureGrant(spaSp.id, graphSp.id, GRAPH_SCOPE_NAMES);
       await ensureGrant(spaSp.id, apiSp.id, ['access_as_user']);
-    } catch {
-      throw new Error('Entra applications were configured, but tenant-wide consent failed. Run azd up as a tenant administrator authorized to grant these delegated permissions.');
+    } catch (error) {
+      const detail = error instanceof Error ? ` ${error.message}` : '';
+      throw new Error(`Entra applications were configured, but tenant-wide consent failed. Run azd up as a tenant administrator authorized to grant these delegated permissions.${detail}`);
     }
 
     for (const [key, value] of Object.entries({
