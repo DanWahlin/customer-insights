@@ -1,40 +1,39 @@
-# Customer Insights with Microsoft Graph, Foundry IQ, and ACS
+# Customer Insights with Foundry ID, Microsoft Graph, and ACS
 
-This sample combines customer data with Microsoft 365 context, grounded document answers, generative AI, and customer communications. The web client, API, and PostgreSQL database can be run locally. Azure supplies the AI, search, and communication capabilities.
+This sample combines customer data with Microsoft 365 context, generative AI using Microsoft Foundry models, grounded document answers using Foundry AI, and customer communications using Azure Communication Services. The web client, API, and PostgreSQL database can be run locally. Azure supplies the AI, search, and communication capabilities.
 
-The sample began as a Microsoft Learn tutorial and has since been modernized:
+Key features that integrate AI, communication, and organizational data into the app:
 
-- Angular 22 and Express 5
-- Direct MSAL Browser and Microsoft Graph Client calls instead of the deprecated Microsoft Graph Toolkit
-- A native account menu with the signed-in user's name, email, and sign-out action
-- Microsoft Foundry models and Foundry IQ instead of Azure OpenAI On Your Data
-- Azure AI Search Free for the proof-of-concept document index and knowledge base
+- Microsoft Foundry models and Foundry IQ
+- Direct MSAL Browser and Microsoft Graph Client calls
+- Azure AI Search Free for document indexing and knowledge base
 - PostgreSQL-backed natural-language queries with read-only generated SQL execution
 - Local progress states for document answers and generated email/SMS drafts
+- Angular client with Express APIs on the backend
 
 ## What the app demonstrates
 
 | Area | Capability |
 | --- | --- |
 | Customer data | Browse seeded PostgreSQL customer and order data; generate a parameterized read-only query from natural language. |
-| Microsoft Graph | Search files, mail, calendar events, and Teams messages; post to an explicitly configured Teams channel. |
 | Foundry IQ | Ask questions over the repository's customer documents and receive grounded answers with citations. |
-| Generative AI | Generate SQL plus customer-specific email and SMS drafts with `gpt-5-mini`. |
+| Generative AI | Generate SQL plus customer-specific email and SMS drafts using a Microsoft Foundry model. |
 | Azure Communication Services | Create browser calling identities and send approved email or SMS messages to server-configured test destinations. |
+| Microsoft Graph | Search files, mail, calendar events, and Teams messages; post to an explicitly configured Teams channel. |
 
 ## Architecture
 
 ```text
 Local browser
-  └─ Angular 22
+  └─ Angular
       ├─ MSAL Browser → Microsoft Graph and local API delegated tokens
       ├─ ACS Calling SDK → Azure Communication Services
       └─ Local Express 5 API
           ├─ Foundry IQ → Azure AI Search Free
-          │   └─ gpt-5-mini → grounded answer and citations
-          ├─ gpt-5-mini → SQL and email/SMS drafts
-          ├─ text-embedding-3-small → document indexing
-          ├─ Local PostgreSQL 18
+          │   └─ GPT model → grounded answer and citations
+          ├─ GPT model → SQL and email/SMS drafts
+          ├─ Embedding model → document indexing
+          ├─ PostgreSQL
           └─ ACS Email and SMS SDKs
 ```
 
@@ -44,11 +43,11 @@ The browser receives only public configuration plus delegated Microsoft Graph an
 
 ### Local application
 
-- Node.js 24.15 or later
+- Node.js LTS or later
 - npm
 - Git
 - Docker, Podman, or another Compose-compatible container runtime for PostgreSQL
-- A Microsoft 365 tenant for the Graph scenarios
+- A Microsoft 365 tenant (or [developer tenant](https://learn.microsoft.com/office/developer-program/microsoft-365-developer-program-get-started) for the Graph scenarios
 
 ### Azure dependency deployment
 
@@ -58,9 +57,9 @@ These tools are needed only when provisioning or updating Foundry and Search:
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - An Azure subscription with model quota in the selected region
 
-The `azd` project does **not** deploy Angular, Express, PostgreSQL, Entra ID, or Azure Communication Services. Those remain local or separately managed.
+The `azd` project does **not** deploy Angular, Express, PostgreSQL, Entra ID, or Azure Communication Services. Those remain local or separately managed to keep it simple to get started.
 
-The deployment path was validated with Azure CLI 2.88, Azure Developer CLI 1.28, and Bicep CLI 0.46.1. Newer compatible versions are appropriate. Model versions and Global Standard quota must also be available in the selected region and subscription.
+Model versions and Global Standard quota must also be available in the selected region and subscription.
 
 ## Configure the environment
 
@@ -86,7 +85,7 @@ cp .env.example .env
 | `CUSTOMER_EMAIL_ADDRESS`, `CUSTOMER_PHONE_NUMBER` | Deliberate server-side test destinations for sends. |
 | `API_HOST`, `API_PORT`, `CLIENT_ORIGIN`, `NG_APP_API_URL` | Local API binding, CORS origin, and browser API URL. |
 
-The Angular environment generator derives feature flags from these values. It never writes AI, Search, database, or ACS credentials into the browser bundle.
+The Angular build process derives feature flags from these values. It never writes AI, Search, database, or ACS credentials into the browser bundle.
 
 ## Provision Foundry and Search with azd
 
