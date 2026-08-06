@@ -24,6 +24,19 @@ test('phone configuration is cleared when the ACS resource changes', () => {
   });
 });
 
+test('managed updates remove duplicate keys that could override the cleared phone number', () => {
+  const source = [
+    'ACS_PHONE_NUMBER=+15550000001',
+    'ACS_PHONE_NUMBER=+15550000002',
+    'ACS_PHONE_NUMBER_RESOURCE=acs-old'
+  ].join('\n');
+  const result = updateEnvironmentText(source, phoneConfigurationForResource(source, 'acs-new'));
+  assert.equal(result.match(/^ACS_PHONE_NUMBER=/gm)?.length, 1);
+  assert.match(result, /^ACS_PHONE_NUMBER=$/m);
+  assert.doesNotMatch(result, /1555000000[12]/);
+  assert.match(result, /^ACS_PHONE_NUMBER_RESOURCE=acs-new$/m);
+});
+
 test('cloud updates preserve unrelated values', () => {
   const source = [
     '# ACS',
