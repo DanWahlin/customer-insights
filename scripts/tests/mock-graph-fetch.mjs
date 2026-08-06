@@ -33,6 +33,13 @@ globalThis.fetch = async (rawUrl, options = {}) => {
     const app = state.apps.find(item => item.id === resource.split('/')[1]);
     Object.assign(app, body); save(state); return jsonResponse(null, 204);
   }
+  if (method === 'DELETE' && resource.startsWith('applications/')) {
+    const id = resource.split('/')[1];
+    const deleted = state.apps.find(item => item.id === id);
+    state.apps = state.apps.filter(item => item.id !== id);
+    if (deleted) state.servicePrincipals = state.servicePrincipals.filter(item => item.appId !== deleted.appId);
+    save(state); return jsonResponse(null, 204);
+  }
   if (method === 'GET' && resource === 'servicePrincipals') {
     const appId = filter.match(/appId eq '([^']+)'/)?.[1];
     return jsonResponse({ value: state.servicePrincipals.filter(sp => sp.appId === appId) });

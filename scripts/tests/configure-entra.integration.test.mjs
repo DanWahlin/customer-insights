@@ -83,6 +83,53 @@ test('configure-entra reconciles applications, service principals, grants, and a
     assert.equal(state.env.ENTRA_SPA_APP_ID, spa.appId);
     assert.equal(state.account.id, 'subscription-1');
     assert.ok(state.apps.every(app => app.tags.includes('customer-insights-azd')));
+
+    const cleanup = spawnSync(process.execPath, [path.join(repositoryRoot, 'scripts/cleanup-entra.mjs'), '--yes'], {
+      cwd: root,
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        MOCK_STATE: statePath,
+        NODE_OPTIONS: `--import=${path.join(repositoryRoot, 'scripts/tests/mock-graph-fetch.mjs')}`
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(cleanup.status, 0, cleanup.stderr || cleanup.stdout);
+    assert.equal(JSON.parse(fs.readFileSync(statePath, 'utf8')).apps.length, 0);
+
+    const cleanupRetry = spawnSync(process.execPath, [path.join(repositoryRoot, 'scripts/cleanup-entra.mjs'), '--yes'], {
+      cwd: root,
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        MOCK_STATE: statePath,
+        NODE_OPTIONS: `--import=${path.join(repositoryRoot, 'scripts/tests/mock-graph-fetch.mjs')}`
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(cleanupRetry.status, 0, cleanupRetry.stderr || cleanupRetry.stdout);
+
+    const unsafeState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    unsafeState.env.ENTRA_SPA_APP_ID = 'unsafe-app';
+    unsafeState.env.ENTRA_API_APP_ID = 'unsafe-api';
+    unsafeState.apps = [
+      { id: 'unsafe-object', appId: 'unsafe-app', displayName: 'unowned-spa', tags: [] },
+      { id: 'unsafe-api-object', appId: 'unsafe-api', displayName: 'owned-api', tags: ['customer-insights-azd'] }
+    ];
+    fs.writeFileSync(statePath, JSON.stringify(unsafeState));
+    const refused = spawnSync(process.execPath, [path.join(repositoryRoot, 'scripts/cleanup-entra.mjs'), '--yes'], {
+      cwd: root,
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        MOCK_STATE: statePath,
+        NODE_OPTIONS: `--import=${path.join(repositoryRoot, 'scripts/tests/mock-graph-fetch.mjs')}`
+      },
+      encoding: 'utf8'
+    });
+    assert.notEqual(refused.status, 0);
+    assert.match(refused.stderr, /ownership marker/);
+    assert.equal(JSON.parse(fs.readFileSync(statePath, 'utf8')).apps.length, 2);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
