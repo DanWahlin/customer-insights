@@ -124,11 +124,11 @@ async function main() {
 
     const names = appDisplayNames(environmentName, values.CUSTOMER_INSIGHTS_INSTANCE_ID);
     const apiApp = await ensureApplication(values.ENTRA_API_APP_ID, names.api);
+    runCli('azd', ['env', 'set', 'ENTRA_API_APP_ID', apiApp.appId, '--no-prompt']);
+    values.ENTRA_API_APP_ID = apiApp.appId;
     const spaApp = await ensureApplication(values.ENTRA_SPA_APP_ID, names.spa);
-    for (const [key, value] of [['ENTRA_API_APP_ID', apiApp.appId], ['ENTRA_SPA_APP_ID', spaApp.appId]]) {
-      runCli('azd', ['env', 'set', key, value, '--no-prompt']);
-      values[key] = value;
-    }
+    runCli('azd', ['env', 'set', 'ENTRA_SPA_APP_ID', spaApp.appId, '--no-prompt']);
+    values.ENTRA_SPA_APP_ID = spaApp.appId;
     const existingScopeId = apiApp.api?.oauth2PermissionScopes?.find(scope => scope.value === 'access_as_user')?.id;
     const scopeId = values.ENTRA_API_SCOPE_ID || existingScopeId || stableGuid(`${requestedTenant}:${environmentName}:access_as_user`);
     const redirectUris = normalizeRedirectUris([
