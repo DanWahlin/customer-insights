@@ -1,3 +1,5 @@
+name: customer-insights
+
 services:
   postgresDb:
     image: postgres:18-alpine
@@ -15,3 +17,4 @@ services:
 
 volumes:
   postgres-data-v18:
+    name: openai-acs-msgraph_postgres-data-v18

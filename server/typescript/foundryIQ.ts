@@ -3,7 +3,7 @@ import './config';
 
 const SEARCH_API_VERSION = '2026-04-01';
 const REPOSITORY_DOCUMENT_BASE = (process.env.DOCUMENT_REPOSITORY_URL ||
-  'https://github.com/DanWahlin/openai-acs-msgraph/blob/main/').replace(/\/?$/, '/');
+  'https://github.com/DanWahlin/customer-insights/blob/main/').replace(/\/?$/, '/');
 
 const {
   AI_API_KEY,
