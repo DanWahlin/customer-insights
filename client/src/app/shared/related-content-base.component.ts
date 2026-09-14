@@ -43,16 +43,17 @@ export abstract class RelatedContentBaseComponent {
 
     abstract search(searchText: string) : Promise<any>;
 
-    protected async updateWithLatest<T>(loader: () => Promise<T[]>): Promise<void> {
+    protected async updateWithLatest<T>(loader: () => Promise<T[]>, errorMessage: string): Promise<void> {
       const generation = ++this.searchGeneration;
       try {
         const results = await loader();
         if (generation === this.searchGeneration) this.data = results;
       }
-      catch {
+      catch (error) {
+        console.error(errorMessage, error);
         if (generation === this.searchGeneration) {
           this.data = [];
-          this.loadError.emit('Microsoft 365 content could not be loaded. Try again or use another search term.');
+          this.loadError.emit(errorMessage);
         }
       }
     }

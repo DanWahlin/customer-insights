@@ -12,6 +12,9 @@ import { RelatedContentBaseComponent } from '@shared/related-content-base.compon
 })
 export class EmailsComponent extends RelatedContentBaseComponent {
   override async search(query: string) {
-    await this.updateWithLatest(() => this.graphService.searchEmailMessages(query));
+    await this.updateWithLatest(
+      () => this.graphService.searchEmailMessages(query),
+      'Email could not be loaded. Try again or use another search term.'
+    );
   }
 }

@@ -29,6 +29,7 @@ process.stderr.write('Unhandled mock command: ' + JSON.stringify(args)); process
 test('configure-entra reconciles applications, service principals, grants, and azd values', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'customer-insights-entra-'));
   try {
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'commonjs' }));
     const bin = path.join(root, 'bin');
     fs.mkdirSync(bin);
     for (const name of ['az', 'azd']) {

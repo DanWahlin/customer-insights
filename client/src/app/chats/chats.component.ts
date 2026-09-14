@@ -41,7 +41,10 @@ export class ChatsComponent extends RelatedContentBaseComponent implements OnDes
   }
 
   override async search(query: string) {
-    await this.updateWithLatest(() => this.graphService.searchChatMessages(query));
+    await this.updateWithLatest(
+      () => this.graphService.searchChatMessages(query),
+      'Teams conversations could not be loaded. Try again or use another search term.'
+    );
   }
 
   ngOnDestroy() {

@@ -13,7 +13,8 @@
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint",
     "test:auth-callback": "node --experimental-strip-types --test scripts/auth-callback.test.mjs",
-    "test:graph-message-path": "node --experimental-strip-types --test scripts/graph-message-path.test.mjs"
+    "test:graph-message-path": "node --experimental-strip-types --test scripts/graph-message-path.test.mjs",
+    "test:graph-search": "node --experimental-strip-types --test scripts/graph-search.test.mjs"
   },
   "private": true,
   "engines": {
@@ -23,15 +24,15 @@
     "@hono/node-server": "^2.0.5"
   },
   "dependencies": {
-    "@angular/animations": "^22.1.0",
-    "@angular/cdk": "^22.1.0",
-    "@angular/common": "^22.1.0",
-    "@angular/compiler": "^22.1.0",
-    "@angular/core": "^22.1.0",
-    "@angular/forms": "^22.1.0",
-    "@angular/material": "^22.1.0",
-    "@angular/platform-browser": "^22.1.0",
-    "@angular/router": "^22.1.0",
+    "@angular/animations": "^22.1.6",
+    "@angular/cdk": "^22.1.6",
+    "@angular/common": "^22.1.6",
+    "@angular/compiler": "^22.1.6",
+    "@angular/core": "^22.1.6",
+    "@angular/forms": "^22.1.6",
+    "@angular/material": "^22.1.6",
+    "@angular/platform-browser": "^22.1.6",
+    "@angular/router": "^22.1.6",
     "@azure/communication-calling": "^1.43.1",
     "@azure/communication-common": "^2.5.0",
     "@azure/msal-browser": "^5.17.3",
@@ -42,9 +43,9 @@
     "zone.js": "~0.16.2"
   },
   "devDependencies": {
-    "@angular/build": "^22.1.2",
-    "@angular/cli": "^22.1.2",
-    "@angular/compiler-cli": "^22.1.0",
+    "@angular/build": "^22.1.8",
+    "@angular/cli": "^22.1.8",
+    "@angular/compiler-cli": "^22.1.6",
     "angular-eslint": "^22.1.0",
     "eslint": "^9.39.5",
     "typescript": "~6.0.3",

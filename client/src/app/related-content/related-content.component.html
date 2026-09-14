@@ -19,8 +19,8 @@
             </div>
 
             <mat-card-content>
-                @if (error) {
-                    <div class="workspace-error" role="alert">{{ error }}</div>
+                @for (message of errorMessages; track message) {
+                    <div class="workspace-error" role="alert">{{ message }}</div>
                 }
                 <mat-tab-group [animationDuration]="'0ms'" mat-stretch-tabs="false" preserveContent="true" class="content-tabs">
                     <mat-tab #files aria-label="Files">

@@ -41,13 +41,13 @@ export class RelatedContentComponent {
   };
 
   customer: Customer | null = null;
-  error = '';
+  contentErrors: Partial<Record<ContentCountType, string>> = {};
   @Output() contentLoaded = new EventEmitter<string>();
   @Input()
   set selectedCustomer(value: Customer | null) {
     this.customer = value;
     this.closed = false;
-    this.error = '';
+    this.contentErrors = {};
     this.settledContent.clear();
     this.contentCounts = { files: 0, emails: 0, chats: 0, agendaEvents: 0 };
     if (value) {
@@ -63,12 +63,17 @@ export class RelatedContentComponent {
 
   dataLoaded(type: ContentCountType, data: any) {
     this.contentCounts[type] = data.length;
+    delete this.contentErrors[type];
     this.markContentSettled(type);
   }
 
   loadFailed(type: ContentCountType, message: string) {
-    this.error = message;
+    this.contentErrors[type] = message;
     this.markContentSettled(type);
+  }
+
+  get errorMessages(): string[] {
+    return Object.values(this.contentErrors);
   }
 
   private markContentSettled(type: ContentCountType) {

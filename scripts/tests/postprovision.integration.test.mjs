@@ -27,6 +27,7 @@ else process.exit(0);
 test('postprovision skips unchanged Foundry IQ corpus', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'customer-insights-post-'));
   try {
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'commonjs' }));
     const bin = path.join(root, 'bin'); fs.mkdirSync(bin);
     for (const name of ['az','azd','npm']) fs.writeFileSync(path.join(bin,name),mockCli,{mode:0o755});
     fs.writeFileSync(path.join(bin, 'node'), `#!/bin/sh

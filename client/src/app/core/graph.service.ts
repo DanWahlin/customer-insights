@@ -15,6 +15,7 @@ import { FeatureFlagsService } from './feature-flags.service';
 import { ChatMessage, ChatMessageInfo } from '@shared/interfaces';
 import { environment } from '../../environments/environment';
 import { buildGraphMessagePath } from './graph-message-path';
+import { buildFileSearchRequest, withTransientGraphRetry } from './graph-search';
 
 const GRAPH_SCOPES = [
   'User.Read',
@@ -138,17 +139,9 @@ export class GraphService {
   async searchFiles(query: string): Promise<DriveItem[]> {
     if (!query) return [];
 
-    const body = {
-      requests: [{
-        entityTypes: ['driveItem'],
-        query: { queryString: `${query} AND ContentType:Document` },
-        from: 0,
-        size: 25,
-        fields: ['id', 'name', 'webUrl', 'size', 'createdDateTime', 'lastModifiedDateTime', 'createdBy', 'lastModifiedBy']
-      }]
-    };
-
-    const response = await this.requireGraphClient().api('/search/query').post(body);
+    const body = buildFileSearchRequest(query);
+    const response = await withTransientGraphRetry(() =>
+      this.requireGraphClient().api('/search/query').post(body));
     return this.extractSearchHits<DriveItem>(response).map(hit => hit.resource);
   }
 

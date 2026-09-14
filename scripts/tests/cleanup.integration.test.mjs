@@ -19,6 +19,7 @@ else if(name==='docker'&&state.dockerFails)process.exit(1);else process.exit(0);
 
   function runCleanup({ groupExists = true, dockerFails = false, expected = 'test', reuseRoot, envOverrides = {}, localOwner = 'test' } = {}) {
     const root = reuseRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'customer-insights-cleanup-'));
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'commonjs' }));
     const bin = path.join(root, 'bin');
     if (!fs.existsSync(bin)) {
       fs.mkdirSync(bin);

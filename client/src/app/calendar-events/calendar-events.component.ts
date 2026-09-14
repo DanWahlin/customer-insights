@@ -15,7 +15,10 @@ type CalendarEvent = {
 })
 export class CalendarEventsComponent extends RelatedContentBaseComponent {
   override async search(query: string) {
-    await this.updateWithLatest(() => this.graphService.searchCalendarEvents(query));
+    await this.updateWithLatest(
+      () => this.graphService.searchCalendarEvents(query),
+      'Calendar events could not be loaded. Try again or use another search term.'
+    );
   }
 
   dayFromDateTime(dateTimeString: string, isAllDay = false) {
