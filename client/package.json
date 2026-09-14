@@ -12,7 +12,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint",
-    "test:auth-callback": "node --experimental-strip-types --test scripts/auth-callback.test.mjs"
+    "test:auth-callback": "node --experimental-strip-types --test scripts/auth-callback.test.mjs",
+    "test:graph-message-path": "node --experimental-strip-types --test scripts/graph-message-path.test.mjs"
   },
   "private": true,
   "engines": {

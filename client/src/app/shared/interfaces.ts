@@ -80,6 +80,8 @@ export interface OneDriveFile {
     channelId?: string;
     chatId?: string;
     messageId: string;
+    replyToId?: string;
+    webUrl?: string;
     summary: string;
   }
   

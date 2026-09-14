@@ -14,6 +14,7 @@ import { TeamsDialogData } from '../textarea-dialog/dialog-data';
 import { FeatureFlagsService } from './feature-flags.service';
 import { ChatMessage, ChatMessageInfo } from '@shared/interfaces';
 import { environment } from '../../environments/environment';
+import { buildGraphMessagePath } from './graph-message-path';
 
 const GRAPH_SCOPES = [
   'User.Read',
@@ -170,13 +171,13 @@ export class GraphService {
       channelId: hit.resource.channelIdentity?.channelId,
       chatId: hit.resource.chatId,
       messageId: hit.resource.id,
+      replyToId: hit.resource.replyToId,
+      webUrl: hit.resource.webUrl,
       summary: this.stripGraphHighlighting(hit.summary ?? '')
     }));
 
     const results = await Promise.allSettled(messageInfo.map(info => {
-      const path = info.teamId && info.channelId
-        ? `/teams/${this.encodePathSegment(info.teamId)}/channels/${this.encodePathSegment(info.channelId)}/messages/${this.encodePathSegment(info.messageId)}`
-        : `/chats/${this.encodePathSegment(info.chatId ?? '')}/messages/${this.encodePathSegment(info.messageId)}`;
+      const path = buildGraphMessagePath(info, value => this.encodePathSegment(value));
       return this.requireGraphClient().api(path).get();
     }));
 
