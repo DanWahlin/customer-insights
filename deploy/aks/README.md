@@ -52,7 +52,7 @@ azd env set ENTRAID_API_SCOPE <api-scope>
 azd env set API_PORT 3000
 azd env set TEAM_ID <optional-team-id>
 azd env set CHANNEL_ID <optional-channel-id>
-azd env set ACS_PHONE_NUMBER <optional-public-caller-id>
+azd env set ACS_PHONE_NUMBER <public-caller-id-required-for-calling>
 azd env set ACS_EMAIL_ADDRESS <optional-public-sender-address>
 azd env set NG_APP_AI_ENABLED true
 azd env set NG_APP_ACS_ENABLED true
@@ -61,6 +61,12 @@ azd env set NG_APP_FOUNDRY_IQ_ENABLED true
 ```
 
 > `NG_APP_API_URL=/` is intentional. It keeps the Angular app on the same origin and routes API traffic through the ingress `/api` path instead of trying to call port `3000` directly from the browser.
+>
+> **Call customer** is included in the compiled Angular image only when
+> `ACS_PHONE_NUMBER` is non-empty. Enabling calling also requires
+> `ACS_CONNECTION_STRING` and the same `ACS_PHONE_NUMBER` in the server Secret.
+> After changing a client build-time value, rebuild and redeploy the client
+> image; restarting the existing pod is not sufficient.
 
 ## 2) Provision the separate AKS infrastructure
 
@@ -160,8 +166,8 @@ kubectl create secret generic server-secrets \
   --from-literal=AZURE_AI_SEARCH_KNOWLEDGE_SOURCE=customer-documents-ks \
   --from-literal=AZURE_AI_SEARCH_KNOWLEDGE_BASE=customer-documents-kb \
   --from-literal=DOCUMENT_REPOSITORY_URL=https://github.com/DanWahlin/customer-insights/blob/main/ \
-  --from-literal=ACS_CONNECTION_STRING=<optional-acs-connection-string> \
-  --from-literal=ACS_PHONE_NUMBER=<optional-acs-phone-number> \
+  --from-literal=ACS_CONNECTION_STRING=<acs-connection-string-required-for-calling> \
+  --from-literal=ACS_PHONE_NUMBER=<public-caller-id-required-for-calling> \
   --from-literal=ACS_EMAIL_ADDRESS=<optional-acs-email-address> \
   --from-literal=CUSTOMER_EMAIL_ADDRESS=<optional-approved-test-email> \
   --from-literal=CUSTOMER_PHONE_NUMBER=<optional-approved-test-phone>
