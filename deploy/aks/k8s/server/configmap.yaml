@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-config
+  namespace: customer-insights
+  labels:
+    app: server
+data:
+  API_HOST: "0.0.0.0"
+  API_PORT: "3000"
+  NODE_ENV: "production"
+  PGSSLMODE: "require"

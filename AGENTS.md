@@ -29,6 +29,12 @@ Read `README.md` before changing setup, infrastructure, authentication, or secur
 - Azure permits only one Free Search service per subscription. Never repurpose or alter an unrelated Search service to work around that limit.
 - Keep the serialized `dependsOn` chain for AI account child resources; parallel model/project deployment can fail with `RequestConflict`.
 
+## Optional AKS deployment exception
+
+The default and non-negotiable path remains local Angular + local Express + local PostgreSQL, with the checked-in root `azure.yaml` provisioning only Azure AI/Search/ACS dependencies.
+
+This repository now also contains `deploy/aks/`, which is an **explicit, opt-in, separate deployment mode** for running the full application on AKS with managed PostgreSQL. It is isolated from the root azd project, has its own `azure.yaml` and infra, is **not** part of the default workflow, and must be run explicitly by the user from `deploy/aks/`.
+
 ## Local workflow
 
 Use the root `.env.example` as the configuration contract.

@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: server
+  namespace: customer-insights
+  labels:
+    app: server
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: server

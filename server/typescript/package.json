@@ -5,6 +5,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "init-db": "tsx scripts/init-db.ts",
     "start": "node dist/index.js",
     "dev": "tsx watch index.ts",
     "test": "node --import tsx --test tests/**/*.test.ts",

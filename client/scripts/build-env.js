@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 function loadEnv() {
   const envPath = path.join(__dirname, '..', '..', '.env');
-  const env = {};
+  const env = { ...process.env };
   
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf8');
@@ -20,6 +20,10 @@ function loadEnv() {
   }
   
   return env;
+}
+
+function isEnabled(value) {
+  return /^(1|true|yes|on)$/i.test((value || '').trim());
 }
 
 export function updateEnvironment(isProd = false) {
@@ -35,13 +39,13 @@ export function updateEnvironment(isProd = false) {
     TEAM_ID: env.TEAM_ID || '',
     CHANNEL_ID: env.CHANNEL_ID || '',
     TEAMS_ENABLED: !!(env.TEAM_ID && env.CHANNEL_ID),
-    AI_ENABLED: !!env.AI_API_KEY,
-    ACS_CONNECTION_STRING: !!env.ACS_CONNECTION_STRING,
+    AI_ENABLED: isEnabled(env.NG_APP_AI_ENABLED) || !!(env.AI_API_KEY || env.AI_ENDPOINT),
+    ACS_CONNECTION_STRING: isEnabled(env.NG_APP_ACS_ENABLED) || !!(env.ACS_CONNECTION_STRING || env.ACS_PHONE_NUMBER),
     ACS_PHONE_NUMBER: env.ACS_PHONE_NUMBER || '',
-    ACS_EMAIL_ADDRESS: !!env.ACS_EMAIL_ADDRESS,
+    ACS_EMAIL_ADDRESS: isEnabled(env.NG_APP_ACS_EMAIL_ENABLED) || !!env.ACS_EMAIL_ADDRESS,
 
     API_PORT: env.API_PORT || '',
-    FOUNDRY_IQ_ENABLED: !!(env.AZURE_AI_SEARCH_ENDPOINT && env.AZURE_AI_SEARCH_KNOWLEDGE_BASE)
+    FOUNDRY_IQ_ENABLED: isEnabled(env.NG_APP_FOUNDRY_IQ_ENABLED) || !!(env.AZURE_AI_SEARCH_ENDPOINT && env.AZURE_AI_SEARCH_KNOWLEDGE_BASE)
   };
   
   // Generate the TypeScript content

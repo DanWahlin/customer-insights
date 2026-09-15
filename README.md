@@ -127,6 +127,20 @@ and client after changing `.env`.
 
 ## Run locally
 
+Before starting the app, confirm the local URL values in the ignored root
+`.env`. The API port in both values must match `API_PORT`, and
+`CLIENT_ORIGIN` must exactly match the URL used to open Angular:
+
+```dotenv
+API_PORT=3000
+CLIENT_ORIGIN=http://localhost:4200
+NG_APP_API_URL=http://localhost:3000
+```
+
+Remote HTTPS values used for Entra/MSAL testing, including Tailscale or other
+reverse-proxy URLs, should not be reused while opening Angular through
+`http://localhost:4200`. Restart both processes after changing these values.
+
 From the repository root, install dependencies:
 
 ```bash
@@ -194,3 +208,7 @@ node scripts/cleanup.mjs --yes --environment <exact-azd-environment-name>
 Cleanup succeeds only after Azure reports that the selected environment's
 resource group is absent. It then removes only the two ownership-marked Entra
 applications, removes that azd environment, and stops local Compose services.
+
+## Optional AKS deployment path
+
+An opt-in, completely separate AKS + managed PostgreSQL deployment path lives under [`deploy/aks/`](deploy/aks/README.md). It has its own `azure.yaml`, infra, and Kubernetes manifests, and does not modify or replace the root azd workflow described above.

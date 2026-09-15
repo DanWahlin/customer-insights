@@ -1,0 +1,60 @@
+name: customer-insights-aks
+infra:
+  provider: bicep
+  path: infra
+  module: main
+services:
+  server:
+    project: ../../server/typescript
+    language: docker
+    host: aks
+    docker:
+      path: ./Dockerfile
+      context: .
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      image: server
+      remoteBuild: true
+    k8s:
+      namespace: customer-insights
+      deploymentPath: ../../deploy/aks/k8s/server
+      deployment:
+        name: server
+      service:
+        name: server
+      ingress:
+        name: server
+  client:
+    project: ../../client
+    language: docker
+    host: aks
+    uses:
+      - server
+    docker:
+      path: ./Dockerfile
+      context: .
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      image: client
+      remoteBuild: true
+      buildArgs:
+        - NG_APP_API_URL=${NG_APP_API_URL}
+        - ENTRAID_CLIENT_ID=${ENTRAID_CLIENT_ID}
+        - ENTRAID_TENANT_ID=${ENTRAID_TENANT_ID}
+        - ENTRAID_API_SCOPE=${ENTRAID_API_SCOPE}
+        - API_PORT=${API_PORT}
+        - TEAM_ID=${TEAM_ID}
+        - CHANNEL_ID=${CHANNEL_ID}
+        - ACS_PHONE_NUMBER=${ACS_PHONE_NUMBER}
+        - ACS_EMAIL_ADDRESS=${ACS_EMAIL_ADDRESS}
+        - NG_APP_AI_ENABLED=${NG_APP_AI_ENABLED}
+        - NG_APP_ACS_ENABLED=${NG_APP_ACS_ENABLED}
+        - NG_APP_ACS_EMAIL_ENABLED=${NG_APP_ACS_EMAIL_ENABLED}
+        - NG_APP_FOUNDRY_IQ_ENABLED=${NG_APP_FOUNDRY_IQ_ENABLED}
+    k8s:
+      namespace: customer-insights
+      deploymentPath: ../deploy/aks/k8s/client
+      deployment:
+        name: client
+      service:
+        name: client
+      ingress:
+        name: client

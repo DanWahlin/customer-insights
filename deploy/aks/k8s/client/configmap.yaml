@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-config
+  namespace: customer-insights
+  labels:
+    app: client
+data:
+  APP_BASE_PATH: "/"
+  HEALTH_PATH: "/"
+  CONTAINER_PORT: "8080"

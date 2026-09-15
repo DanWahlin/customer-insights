@@ -147,7 +147,13 @@ export async function initializeDb() {
         END IF;
       END
     $$;`);
-    await client.query('ALTER ROLE app_runtime NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT');
+    const runtimeRole = await client.query<{ rolsuper: boolean }>(
+      "SELECT rolsuper FROM pg_roles WHERE rolname = 'app_runtime'"
+    );
+    if (runtimeRole.rows[0]?.rolsuper) {
+      throw new Error('The app_runtime role must not have SUPERUSER privileges.');
+    }
+    await client.query('ALTER ROLE app_runtime NOCREATEDB NOCREATEROLE INHERIT');
     const passwordStatement = (await client.query("SELECT format('ALTER ROLE app_runtime PASSWORD %L', $1::text) AS sql", [runtimePassword])).rows[0].sql;
     await client.query(passwordStatement);
     await client.query('GRANT app_readonly TO app_runtime');

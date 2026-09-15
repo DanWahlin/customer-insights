@@ -1,0 +1,7 @@
+node_modules
+dist
+.angular
+.env
+.env.*
+npm-debug.log*
+coverage
